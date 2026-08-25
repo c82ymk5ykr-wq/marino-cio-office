@@ -1,0 +1,34 @@
+{
+  "schema_version": "1.0.0",
+  "idea_id": "synthetic-idea-001",
+  "first_seen_at": "2026-01-15T14:00:00Z",
+  "last_seen_at": "2026-01-15T14:00:00Z",
+  "board": "FRESH_IDEA_DISCOVERY",
+  "research_state": "candidate",
+  "asset": {
+    "symbol": "SYNTH-01",
+    "name": "Fictional Grid Systems",
+    "asset_type": "equity"
+  },
+  "thesis": "A fictional example may benefit from an invented infrastructure replacement cycle.",
+  "regime_fit": "The fictional setup is used only to demonstrate a neutral regime-fit field.",
+  "catalysts": [
+    "Publication of a fictional order update."
+  ],
+  "risks": [
+    "The invented replacement cycle does not occur."
+  ],
+  "invalidation_conditions": [
+    "The fictional order metric falls below its invented validation threshold."
+  ],
+  "time_horizon": "Illustrative six-to-twelve-month research horizon.",
+  "timing_notes": "Research candidate only; no deployment action is implied.",
+  "confidence": "low",
+  "evidence": [
+    {
+      "source_id": "synthetic-market-snapshot",
+      "provenance": "INLINE",
+      "claim": "A fictional observation was available at the stated synthetic timestamp."
+    }
+  ]
+}

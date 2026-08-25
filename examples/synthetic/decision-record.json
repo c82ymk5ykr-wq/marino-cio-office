@@ -1,0 +1,27 @@
+{
+  "schema_version": "1.0.0",
+  "decision_id": "synthetic-decision-001",
+  "idea_id": "synthetic-idea-001",
+  "recorded_at": "2026-01-15T14:05:00Z",
+  "research_disposition": "monitor",
+  "deployment": {
+    "readiness": "not_ready",
+    "action": "no_action",
+    "timing_and_confirmation": "Wait for the fictional validation event.",
+    "size_band": "No allocation; synthetic example only.",
+    "scaling_plan": "No scaling plan applies to a synthetic example."
+  },
+  "rationale": "The fictional thesis is suitable for demonstrating continued research, not action.",
+  "historian_note": "No real historical record is associated with this synthetic case.",
+  "skeptic_countercase": "All supporting evidence is invented and therefore cannot support a real decision.",
+  "alternatives_considered": [
+    "Reject the synthetic example instead of monitoring it."
+  ],
+  "invalidation_conditions": [
+    "The fictional validation event fails."
+  ],
+  "review_by": "2026-02-15T14:05:00Z",
+  "evidence_ids": [
+    "synthetic-market-snapshot"
+  ]
+}

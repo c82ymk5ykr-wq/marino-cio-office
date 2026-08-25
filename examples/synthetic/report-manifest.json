@@ -1,0 +1,47 @@
+{
+  "schema_version": "1.0.0",
+  "report_id": "synthetic-daily-20260115",
+  "report_type": "daily_decision_report",
+  "generated_at": "2026-01-15T14:05:00Z",
+  "data_as_of": "2026-01-15T14:00:00Z",
+  "status": "provisional",
+  "status_reason": "Two fictional observations are intentionally absent to demonstrate honest incomplete coverage.",
+  "coverage": {
+    "universe": "ten fictional research candidates",
+    "expected": 10,
+    "observed": 8,
+    "percent": 80.0,
+    "gaps": [
+      "Synthetic candidates 09 and 10 were not observed."
+    ]
+  },
+  "freshness": {
+    "status": "fresh",
+    "oldest_material_source_as_of": "2026-01-15T13:55:00Z",
+    "threshold_hours": 24
+  },
+  "sources": [
+    {
+      "source_id": "synthetic-market-snapshot",
+      "category": "market",
+      "provenance": "INLINE",
+      "data_as_of": "2026-01-15T13:55:00Z",
+      "retrieved_at": "2026-01-15T14:01:00Z",
+      "status": "available",
+      "note": "Entirely fictional source created to demonstrate the contract."
+    }
+  ],
+  "quality_flags": [
+    "INCOMPLETE_SYNTHETIC_COVERAGE"
+  ],
+  "idea_ids": [
+    "synthetic-idea-001"
+  ],
+  "decision_ids": [
+    "synthetic-decision-001"
+  ],
+  "artifact": {
+    "status": "not_attempted",
+    "note": "Synthetic repository examples are not operational report artifacts."
+  }
+}
