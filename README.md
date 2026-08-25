@@ -46,6 +46,7 @@ See [the public/private boundary](docs/public-private-boundary.md) and
 
 - [CIO operating model](docs/operating-model.md)
 - [Canonical contract vocabulary](docs/contract-vocabulary.md)
+- [Public specification inventory](docs/specification-inventory.md)
 - [Universe completion gates](docs/universe-completion-gates.md)
 - [Idea lineage and anti-staleness metrics](docs/idea-lineage-metrics.md)
 - [Report manifest schema](schemas/v1/report-manifest.schema.json)

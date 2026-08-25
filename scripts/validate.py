@@ -35,6 +35,7 @@ REQUIRED_FILES = {
     "docs/idea-lineage-metrics.md",
     "docs/operating-model.md",
     "docs/public-private-boundary.md",
+    "docs/specification-inventory.md",
     "docs/universe-completion-gates.md",
     "examples/synthetic/decision-record.json",
     "examples/synthetic/investment-idea.json",
