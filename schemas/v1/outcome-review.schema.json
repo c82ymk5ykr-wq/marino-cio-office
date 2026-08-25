@@ -1,0 +1,854 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://raw.githubusercontent.com/c82ymk5ykr-wq/marino-cio-office/main/schemas/v1/outcome-review.schema.json",
+  "title": "Marino CIO Office outcome review",
+  "description": "Append-only public contract for a private, qualitative post-decision review. Real reviews and linked records remain private.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "review_id",
+    "links",
+    "clocks",
+    "review_assessability",
+    "evidence_quality",
+    "research_outcome",
+    "decision_quality",
+    "process_quality",
+    "timing_discipline",
+    "invalidation_trigger",
+    "invalidation_response",
+    "attribution"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "1.0.0"
+    },
+    "review_id": {
+      "$ref": "#/$defs/review_identifier"
+    },
+    "prior_review_ref": {
+      "$ref": "#/$defs/review_identifier",
+      "description": "Optional opaque link to the immediately prior append-only review. It never replaces or mutates that review."
+    },
+    "links": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "decision_ref",
+        "idea_ref",
+        "evidence_refs"
+      ],
+      "properties": {
+        "decision_ref": {
+          "$ref": "#/$defs/opaque_reference",
+          "description": "Stable private reconciliation token for the immutable ex-ante decision."
+        },
+        "idea_ref": {
+          "$ref": "#/$defs/opaque_reference",
+          "description": "Stable private reconciliation token for the linked idea lineage."
+        },
+        "evidence_refs": {
+          "$ref": "#/$defs/opaque_reference_array",
+          "description": "Opaque references only. Evidence content and source aliases are not embedded."
+        }
+      }
+    },
+    "clocks": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "decision_recorded_at",
+        "evaluation_started_at",
+        "evidence_cutoff_at",
+        "reviewed_at"
+      ],
+      "properties": {
+        "decision_recorded_at": {
+          "$ref": "#/$defs/utc_timestamp",
+          "description": "Creation time copied from the immutable ex-ante decision solely for lifecycle validation."
+        },
+        "evaluation_started_at": {
+          "$ref": "#/$defs/utc_timestamp",
+          "description": "Start of the outcome-observation interval evaluated by this review. Separate invalidation surveillance may begin at decision time."
+        },
+        "evidence_cutoff_at": {
+          "$ref": "#/$defs/utc_timestamp",
+          "description": "Latest effective evidence time considered by this review."
+        },
+        "reviewed_at": {
+          "$ref": "#/$defs/utc_timestamp",
+          "description": "Time this append-only review was finalized."
+        }
+      }
+    },
+    "review_assessability": {
+      "type": "string",
+      "enum": [
+        "assessable",
+        "partial",
+        "unavailable",
+        "unknown"
+      ]
+    },
+    "evidence_quality": {
+      "type": "string",
+      "enum": [
+        "verified",
+        "partial",
+        "unavailable",
+        "unverified"
+      ]
+    },
+    "research_outcome": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/qualitative_axis"
+        },
+        {
+          "properties": {
+            "assessment_state": {
+              "enum": [
+                "assessable",
+                "partial",
+                "unavailable",
+                "unknown"
+              ]
+            },
+            "classification": {
+              "enum": [
+                "favorable",
+                "mixed",
+                "adverse"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    "decision_quality": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/qualitative_axis"
+        },
+        {
+          "properties": {
+            "assessment_state": {
+              "enum": [
+                "assessable",
+                "partial",
+                "unavailable",
+                "unknown"
+              ]
+            },
+            "classification": {
+              "enum": [
+                "sound",
+                "mixed",
+                "unsound"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    "process_quality": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/qualitative_axis"
+        },
+        {
+          "properties": {
+            "assessment_state": {
+              "enum": [
+                "assessable",
+                "partial",
+                "unavailable",
+                "unknown"
+              ]
+            },
+            "classification": {
+              "enum": [
+                "disciplined",
+                "mixed",
+                "undisciplined"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    "timing_discipline": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/qualitative_axis"
+        },
+        {
+          "properties": {
+            "classification": {
+              "enum": [
+                "disciplined",
+                "mixed",
+                "undisciplined"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    "invalidation_trigger": {
+      "$ref": "#/$defs/invalidation_trigger"
+    },
+    "invalidation_response": {
+      "$ref": "#/$defs/invalidation_response"
+    },
+    "attribution": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "assessment_state",
+        "factors",
+        "note"
+      ],
+      "properties": {
+        "assessment_state": {
+          "$ref": "#/$defs/assessment_state"
+        },
+        "factors": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/attribution_factor"
+          },
+          "uniqueItems": true
+        },
+        "note": {
+          "$ref": "#/$defs/non_whitespace_text"
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "assessment_state": {
+                "enum": [
+                  "assessable",
+                  "partial"
+                ]
+              }
+            },
+            "required": [
+              "assessment_state"
+            ]
+          },
+          "then": {
+            "properties": {
+              "factors": {
+                "minItems": 1
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "assessment_state": {
+                "enum": [
+                  "unavailable",
+                  "unknown",
+                  "not_applicable"
+                ]
+              }
+            },
+            "required": [
+              "assessment_state"
+            ]
+          },
+          "then": {
+            "properties": {
+              "factors": {
+                "maxItems": 0
+              }
+            }
+          }
+        }
+      ]
+    }
+  },
+  "$defs": {
+    "review_identifier": {
+      "type": "string",
+      "pattern": "^orv_[A-Za-z0-9_-]{16,128}$",
+      "description": "Opaque review identifier with no asset, account, client, or decision semantics encoded in it."
+    },
+    "opaque_reference": {
+      "type": "string",
+      "pattern": "^ref_[A-Za-z0-9_-]{16,128}$",
+      "description": "Stable opaque private reconciliation token. It is not a path, URI, provider alias, symbol, or embedded record."
+    },
+    "opaque_reference_array": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/opaque_reference"
+      },
+      "uniqueItems": true
+    },
+    "utc_timestamp": {
+      "type": "string",
+      "format": "date-time",
+      "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(?:\\.\\d+)?Z(?![\\s\\S])"
+    },
+    "non_whitespace_text": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "\\S"
+    },
+    "assessment_state": {
+      "type": "string",
+      "enum": [
+        "assessable",
+        "partial",
+        "unavailable",
+        "unknown",
+        "not_applicable"
+      ]
+    },
+    "qualitative_axis": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "assessment_state",
+        "evidence_refs",
+        "note"
+      ],
+      "properties": {
+        "assessment_state": {
+          "$ref": "#/$defs/assessment_state"
+        },
+        "classification": {
+          "type": "string"
+        },
+        "evidence_refs": {
+          "$ref": "#/$defs/opaque_reference_array"
+        },
+        "note": {
+          "$ref": "#/$defs/non_whitespace_text"
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "assessment_state": {
+                "enum": [
+                  "assessable",
+                  "partial"
+                ]
+              }
+            },
+            "required": [
+              "assessment_state"
+            ]
+          },
+          "then": {
+            "required": [
+              "classification"
+            ],
+            "properties": {
+              "evidence_refs": {
+                "minItems": 1
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "assessment_state": {
+                "enum": [
+                  "unavailable",
+                  "unknown",
+                  "not_applicable"
+                ]
+              }
+            },
+            "required": [
+              "assessment_state"
+            ]
+          },
+          "then": {
+            "properties": {
+              "evidence_refs": {
+                "maxItems": 0
+              }
+            },
+            "not": {
+              "required": [
+                "classification"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    "invalidation_trigger": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "state",
+        "evidence_refs",
+        "note"
+      ],
+      "properties": {
+        "state": {
+          "type": "string",
+          "enum": [
+            "not_triggered",
+            "triggered",
+            "ambiguous",
+            "unknown",
+            "not_applicable"
+          ]
+        },
+        "triggered_at": {
+          "$ref": "#/$defs/utc_timestamp"
+        },
+        "evidence_refs": {
+          "$ref": "#/$defs/opaque_reference_array"
+        },
+        "note": {
+          "$ref": "#/$defs/non_whitespace_text"
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "state": {
+                "const": "triggered"
+              }
+            },
+            "required": [
+              "state"
+            ]
+          },
+          "then": {
+            "required": [
+              "triggered_at"
+            ],
+            "properties": {
+              "evidence_refs": {
+                "minItems": 1
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "state": {
+                "enum": [
+                  "not_triggered",
+                  "ambiguous"
+                ]
+              }
+            },
+            "required": [
+              "state"
+            ]
+          },
+          "then": {
+            "properties": {
+              "evidence_refs": {
+                "minItems": 1
+              }
+            },
+            "not": {
+              "required": [
+                "triggered_at"
+              ]
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "state": {
+                "enum": [
+                  "unknown",
+                  "not_applicable"
+                ]
+              }
+            },
+            "required": [
+              "state"
+            ]
+          },
+          "then": {
+            "properties": {
+              "evidence_refs": {
+                "maxItems": 0
+              }
+            },
+            "not": {
+              "required": [
+                "triggered_at"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    "invalidation_response": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "state",
+        "evidence_refs",
+        "note"
+      ],
+      "properties": {
+        "state": {
+          "type": "string",
+          "enum": [
+            "followed",
+            "delayed",
+            "not_followed",
+            "ambiguous",
+            "unknown",
+            "not_applicable"
+          ]
+        },
+        "responded_at": {
+          "$ref": "#/$defs/utc_timestamp"
+        },
+        "evidence_refs": {
+          "$ref": "#/$defs/opaque_reference_array"
+        },
+        "note": {
+          "$ref": "#/$defs/non_whitespace_text"
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "state": {
+                "enum": [
+                  "followed",
+                  "delayed"
+                ]
+              }
+            },
+            "required": [
+              "state"
+            ]
+          },
+          "then": {
+            "required": [
+              "responded_at"
+            ],
+            "properties": {
+              "evidence_refs": {
+                "minItems": 1
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "state": {
+                "enum": [
+                  "not_followed",
+                  "ambiguous"
+                ]
+              }
+            },
+            "required": [
+              "state"
+            ]
+          },
+          "then": {
+            "properties": {
+              "evidence_refs": {
+                "minItems": 1
+              }
+            },
+            "not": {
+              "required": [
+                "responded_at"
+              ]
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "state": {
+                "enum": [
+                  "unknown",
+                  "not_applicable"
+                ]
+              }
+            },
+            "required": [
+              "state"
+            ]
+          },
+          "then": {
+            "properties": {
+              "evidence_refs": {
+                "maxItems": 0
+              }
+            },
+            "not": {
+              "required": [
+                "responded_at"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    "attribution_factor": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "category",
+        "direction",
+        "confidence",
+        "evidence_refs",
+        "note"
+      ],
+      "properties": {
+        "category": {
+          "type": "string",
+          "enum": [
+            "research_thesis",
+            "evidence_quality",
+            "decision_process",
+            "timing_discipline",
+            "invalidation_handling",
+            "external_conditions",
+            "other"
+          ]
+        },
+        "direction": {
+          "type": "string",
+          "enum": [
+            "supporting",
+            "detracting",
+            "mixed",
+            "unclear"
+          ],
+          "description": "Qualitative association only; never a causal or numeric contribution claim."
+        },
+        "confidence": {
+          "type": "string",
+          "enum": [
+            "low",
+            "medium",
+            "high"
+          ]
+        },
+        "evidence_refs": {
+          "allOf": [
+            {
+              "$ref": "#/$defs/opaque_reference_array"
+            },
+            {
+              "minItems": 1
+            }
+          ]
+        },
+        "note": {
+          "$ref": "#/$defs/non_whitespace_text"
+        }
+      }
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "review_assessability": {
+            "const": "assessable"
+          }
+        },
+        "required": [
+          "review_assessability"
+        ]
+      },
+      "then": {
+        "properties": {
+          "links": {
+            "properties": {
+              "evidence_refs": {
+                "minItems": 1
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "invalidation_trigger": {
+            "properties": {
+              "state": {
+                "const": "not_triggered"
+              }
+            },
+            "required": [
+              "state"
+            ]
+          }
+        },
+        "required": [
+          "invalidation_trigger"
+        ]
+      },
+      "then": {
+        "properties": {
+          "invalidation_response": {
+            "properties": {
+              "state": {
+                "const": "not_applicable"
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "invalidation_trigger": {
+            "properties": {
+              "state": {
+                "const": "triggered"
+              }
+            },
+            "required": [
+              "state"
+            ]
+          }
+        },
+        "required": [
+          "invalidation_trigger"
+        ]
+      },
+      "then": {
+        "properties": {
+          "invalidation_response": {
+            "properties": {
+              "state": {
+                "enum": [
+                  "followed",
+                  "delayed",
+                  "not_followed",
+                  "ambiguous",
+                  "unknown"
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "invalidation_trigger": {
+            "properties": {
+              "state": {
+                "const": "ambiguous"
+              }
+            },
+            "required": [
+              "state"
+            ]
+          }
+        },
+        "required": [
+          "invalidation_trigger"
+        ]
+      },
+      "then": {
+        "properties": {
+          "invalidation_response": {
+            "properties": {
+              "state": {
+                "enum": [
+                  "ambiguous",
+                  "unknown"
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "invalidation_trigger": {
+            "properties": {
+              "state": {
+                "const": "unknown"
+              }
+            },
+            "required": [
+              "state"
+            ]
+          }
+        },
+        "required": [
+          "invalidation_trigger"
+        ]
+      },
+      "then": {
+        "properties": {
+          "invalidation_response": {
+            "properties": {
+              "state": {
+                "const": "unknown"
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "invalidation_trigger": {
+            "properties": {
+              "state": {
+                "const": "not_applicable"
+              }
+            },
+            "required": [
+              "state"
+            ]
+          }
+        },
+        "required": [
+          "invalidation_trigger"
+        ]
+      },
+      "then": {
+        "properties": {
+          "invalidation_response": {
+            "properties": {
+              "state": {
+                "const": "not_applicable"
+              }
+            }
+          }
+        }
+      }
+    }
+  ]
+}

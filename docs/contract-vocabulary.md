@@ -29,6 +29,15 @@ another axis or used as evidence that another gate passed.
 | Deployment action | `decision-record.deployment.action` | The action selected by the deployment process |
 | Artifact outcome | `report-manifest.artifact.status` | Whether the report reached approved durable private storage |
 | Evidence provenance | `provenance` | How evidence entered the current decision product |
+| Review assessability | `outcome-review.review_assessability` | Whether retained history supports an assessable, partial, unavailable, or unknown review |
+| Review evidence quality | `outcome-review.evidence_quality` | Verification state of evidence used by the review |
+| Research outcome | `outcome-review.research_outcome` | Qualitative thesis-relevant observation, not investment performance |
+| Decision quality | `outcome-review.decision_quality` | Quality of the ex-ante judgment given information then available |
+| Process quality | `outcome-review.process_quality` | Discipline of the declared decision process |
+| Timing discipline | `outcome-review.timing_discipline` | Discipline of timing prerequisites, separate from outcome and deployment |
+| Invalidation trigger | `outcome-review.invalidation_trigger.state` | Whether the original invalidation condition was observed |
+| Invalidation response | `outcome-review.invalidation_response.state` | Qualitative handling of the trigger state |
+| Decision attribution | `outcome-review.attribution` | Evidence-linked qualitative associations without causal or numeric contribution claims |
 
 `complete`, `ready`, `advance`, and `high` never mean recommended, suitable for
 a client, or authorized for deployment. Research disposition and deployment
@@ -67,6 +76,12 @@ All contract timestamps are RFC 3339 date-times in UTC and end in `Z`.
 | `last_seen_at` | Most recent recorded appearance of that lineage in the current record |
 | `recorded_at` | When a CIO decision record was created |
 | `review_by` | Deadline for the next required review |
+| `clocks.decision_recorded_at` | Creation time of the immutable ex-ante decision linked by an outcome review |
+| `clocks.evaluation_started_at` | Start of the outcome-observation interval |
+| `clocks.evidence_cutoff_at` | Latest effective evidence time considered by an outcome review |
+| `clocks.reviewed_at` | Finalization time of the append-only outcome review |
+| `invalidation_trigger.triggered_at` | Observed time of a triggered invalidation condition |
+| `invalidation_response.responded_at` | Observed response time for a followed or delayed invalidation response |
 
 Generation, evidence, retrieval, persistence, universe-membership, and cycle
 completion are different clocks. A future contract field for one of these
@@ -79,8 +94,8 @@ clocks must name it explicitly rather than reusing an existing timestamp.
   substitutes for unknown values.
 - Unknown quality is represented by an explicit contract value such as
   `freshness.status: unknown` or by a documented quality flag.
-- Missing history is not reconstructed. It is reported as unavailable or
-  unverified by the applicable contract.
+- Missing history is not reconstructed. It is reported as unavailable,
+  unknown, unverified, or not applicable by the applicable contract.
 - Counts and percentages are measurements, not confidence scores.
 
 ## Report manifest field dictionary
@@ -204,6 +219,37 @@ report view over deployment decisions, not an investment-idea `board` value.
 | `invalidation_conditions` | Conditions requiring reassessment or exit from the research case |
 | `review_by` | Next required review deadline |
 | `evidence_ids` | Evidence records supporting the decision |
+
+## Outcome-review field dictionary
+
+| Field | Meaning |
+| --- | --- |
+| `schema_version` | Semantic version of the independent outcome-review contract |
+| `review_id` | Stable opaque identifier for one finalized append-only review |
+| `prior_review_ref` | Optional opaque link to the immediately prior review; it never mutates or replaces it |
+| `links.decision_ref` | Opaque private reconciliation token for the immutable ex-ante decision |
+| `links.idea_ref` | Opaque private reconciliation token for the linked idea lineage |
+| `links.evidence_refs` | Complete register of opaque evidence tokens referenced by the review |
+| `clocks.*` | The ordered decision, evaluation-start, evidence-cutoff, and review-finalization clocks defined above |
+| `review_assessability` | Whole-review state: `assessable`, `partial`, `unavailable`, or `unknown` |
+| `evidence_quality` | Retained-evidence state: `verified`, `partial`, `unavailable`, or `unverified` |
+| `research_outcome` | Independent qualitative `favorable`, `mixed`, or `adverse` research observation when assessable |
+| `decision_quality` | Independent qualitative `sound`, `mixed`, or `unsound` ex-ante decision assessment |
+| `process_quality` | Independent qualitative `disciplined`, `mixed`, or `undisciplined` process assessment |
+| `timing_discipline` | Independent qualitative timing assessment; may be not applicable |
+| `invalidation_trigger` | Trigger state and, only when triggered, its observed time and evidence links |
+| `invalidation_response` | Response state and, only when followed or delayed, its observed time and evidence links |
+| `attribution.assessment_state` | Whether qualitative attribution is assessable, partial, unavailable, unknown, or not applicable |
+| `attribution.factors[].category` | Public qualitative factor family |
+| `attribution.factors[].direction` | `supporting`, `detracting`, `mixed`, or `unclear` association |
+| `attribution.factors[].confidence` | `low`, `medium`, or `high` qualitative confidence |
+| `attribution.factors[].evidence_refs` | Opaque evidence tokens supporting the association |
+
+The original decision record is never rewritten with these fields. Outcome
+does not derive decision, process, or timing quality. Attribution is not causal
+proof, investment-performance attribution, or a numeric contribution model.
+See the [outcome-review contract](outcome-review-contract.md) for the full state
+and lifecycle rules.
 
 ## Private conformance review
 

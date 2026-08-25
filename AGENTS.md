@@ -44,6 +44,9 @@ synthetic.
 - Apply `docs/idea-lineage-metrics.md`: routine refreshes do not make an idea
   new, and missing lineage is unverified rather than reconstructed.
 - Separate research disposition from deployment timing, sizing, and action.
+- Apply `docs/outcome-review-contract.md`: preserve the ex-ante decision,
+  append hindsight separately, and keep outcome, process, timing,
+  invalidation, and qualitative attribution independent.
 - Apply `docs/schema-compatibility-policy.md` and keep `schemas/v1/` backward
   compatible. Breaking changes require a new schema version directory and an
   Architecture Decision Record (ADR).

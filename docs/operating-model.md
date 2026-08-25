@@ -31,8 +31,9 @@ prompts, ranking weights, provider adapters, positions, and implementation code.
 9. **Publish and persist privately.** Produce the manifest and report, record the
    durable persistence outcome, and preserve any failure without relying on a
    temporary link as the source of truth.
-10. **Review outcomes.** Feed approved private lessons back through the Chief
-    Historian and future process decisions.
+10. **Review outcomes privately.** Append a separate outcome-review artifact
+    without mutating the ex-ante decision. Lesson approval and Chief Historian
+    ingestion are later, distinct controls.
 
 ## Canonical roles and capabilities
 
@@ -128,3 +129,12 @@ Every report manifest must:
 
 The report itself should lead with decisions, then show the evidence, reviews,
 deployment implications, risks, and data-quality disclosures that support them.
+
+## Outcome review
+
+Post-decision hindsight follows the independent, append-only
+[`outcome-review` contract](outcome-review-contract.md). Research outcome,
+decision quality, process quality, timing discipline, invalidation trigger,
+invalidation response, and qualitative attribution remain separate. Populated
+reviews and their evidence stay private; this public repository contains only
+the interface and invented fixtures.

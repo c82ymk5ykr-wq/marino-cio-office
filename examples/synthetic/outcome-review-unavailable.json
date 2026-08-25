@@ -1,0 +1,52 @@
+{
+  "schema_version": "1.0.0",
+  "review_id": "orv_SYNTH000000000007",
+  "links": {
+    "decision_ref": "ref_SYNTH000000000026",
+    "idea_ref": "ref_SYNTH000000000027",
+    "evidence_refs": []
+  },
+  "clocks": {
+    "decision_recorded_at": "2099-06-01T09:00:00Z",
+    "evaluation_started_at": "2099-06-02T09:00:00Z",
+    "evidence_cutoff_at": "2099-06-10T09:00:00Z",
+    "reviewed_at": "2099-06-11T09:00:00Z"
+  },
+  "review_assessability": "unavailable",
+  "evidence_quality": "unavailable",
+  "research_outcome": {
+    "assessment_state": "unavailable",
+    "evidence_refs": [],
+    "note": "No fictional outcome evidence is retained, so no outcome is inferred."
+  },
+  "decision_quality": {
+    "assessment_state": "unavailable",
+    "evidence_refs": [],
+    "note": "No fictional decision-quality evidence is retained."
+  },
+  "process_quality": {
+    "assessment_state": "unavailable",
+    "evidence_refs": [],
+    "note": "No fictional process history is retained."
+  },
+  "timing_discipline": {
+    "assessment_state": "unavailable",
+    "evidence_refs": [],
+    "note": "No fictional timing history is retained."
+  },
+  "invalidation_trigger": {
+    "state": "unknown",
+    "evidence_refs": [],
+    "note": "The fictional invalidation history is unavailable, so trigger state remains unknown."
+  },
+  "invalidation_response": {
+    "state": "unknown",
+    "evidence_refs": [],
+    "note": "The fictional response history is unavailable, so response state remains unknown."
+  },
+  "attribution": {
+    "assessment_state": "unavailable",
+    "factors": [],
+    "note": "No attribution is created from unavailable fictional history."
+  }
+}

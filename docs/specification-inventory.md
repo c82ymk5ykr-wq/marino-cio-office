@@ -1,6 +1,6 @@
 # Public specification inventory
 
-- Inventory revision: `1.0.0`
+- Inventory revision: `1.1.0`
 - Completed: 2026-08-25
 - Scope: public-safe Marino CIO Office operating outcomes
 
@@ -44,6 +44,10 @@ summarized. The governing boundary is
 | Routine refreshes and rewritten commentary do not make an old idea fresh | [Idea lineage metrics](idea-lineage-metrics.md) and [ADR 0004](decisions/0004-verifiable-idea-lineage.md) | Version 1.1 idea classifications and fictional fixtures distinguish data recency from idea novelty |
 | Verified repeats require a reason; missing lineage is unverified and never reconstructed | [Idea lineage metrics](idea-lineage-metrics.md) and [investment-idea schema](../schemas/v1/investment-idea.schema.json) | Classification-specific validator rules and negative checks enforce the policy |
 | Public examples are visibly fictional and contract changes remain compatible within v1 | [Agent rules](../AGENTS.md), [schema compatibility policy](schema-compatibility-policy.md), and [repository validator](../scripts/validate.py) | CI validates Draft 2020-12 conformance, retained v1 fixtures, historical enum and boundary values, then cross-record, lineage, and boundary rules |
+| The ex-ante decision remains immutable and hindsight is appended separately | [ADR 0008](decisions/0008-append-only-outcome-review.md) and [outcome-review contract](outcome-review-contract.md) | The new additive schema links through opaque references and does not change any existing artifact family |
+| Outcome, decision quality, process quality, timing, invalidation trigger, invalidation response, and attribution are independent axes | [Outcome-review contract](outcome-review-contract.md) and [outcome-review schema](../schemas/v1/outcome-review.schema.json) | Invented adverse-disciplined and favorable-undisciplined fixtures prevent outcome from determining process quality |
+| Missing review history is partial, unavailable, unknown, or unverified rather than reconstructed | [Outcome-review contract](outcome-review-contract.md) | Schema state branches and semantic validation reject classifications or attribution unsupported by the declared review state |
+| Populated outcome reviews and private conformance evidence remain private | [Public/private boundary](public-private-boundary.md) and [ADR 0008](decisions/0008-append-only-outcome-review.md) | Public CI registers only invented synthetic outcome-review fixtures |
 
 ## Normalized ambiguities
 
@@ -67,5 +71,6 @@ summarized. The governing boundary is
 - No absent decision was reconstructed, and no raw conversation or private
   implementation detail was moved into Git history.
 
-Future schema enforcement, private adapters, and outcome-learning interfaces
-remain in the later roadmap phases.
+Private outcome-review producer/consumer conformance, novelty and repeat-quality
+measurement, and Chief Historian lesson ingestion remain controlled Phase 4
+work.

@@ -6,6 +6,7 @@ import copy
 import unittest
 
 from schema_helpers import load_json, validator_for, validator_for_schema
+from scripts.validate import OUTCOME_INVALIDATION_RESPONSES
 
 
 CORPUS_PATH = "tests/compatibility/v1-fixtures.json"
@@ -135,6 +136,56 @@ ENUM_CASES = [
         ("deployment", "action"),
         ["no_action", "initiate", "add", "trim", "exit"],
     ),
+    (
+        "outcome-review",
+        "outcome-review-1.0.0-adverse-disciplined",
+        ("research_outcome", "classification"),
+        ["favorable", "mixed", "adverse"],
+    ),
+    (
+        "outcome-review",
+        "outcome-review-1.0.0-adverse-disciplined",
+        ("decision_quality", "classification"),
+        ["sound", "mixed", "unsound"],
+    ),
+    (
+        "outcome-review",
+        "outcome-review-1.0.0-adverse-disciplined",
+        ("process_quality", "classification"),
+        ["disciplined", "mixed", "undisciplined"],
+    ),
+    (
+        "outcome-review",
+        "outcome-review-1.0.0-adverse-disciplined",
+        ("timing_discipline", "classification"),
+        ["disciplined", "mixed", "undisciplined"],
+    ),
+    (
+        "outcome-review",
+        "outcome-review-1.0.0-adverse-disciplined",
+        ("attribution", "factors", 0, "category"),
+        [
+            "research_thesis",
+            "evidence_quality",
+            "decision_process",
+            "timing_discipline",
+            "invalidation_handling",
+            "external_conditions",
+            "other",
+        ],
+    ),
+    (
+        "outcome-review",
+        "outcome-review-1.0.0-adverse-disciplined",
+        ("attribution", "factors", 0, "direction"),
+        ["supporting", "detracting", "mixed", "unclear"],
+    ),
+    (
+        "outcome-review",
+        "outcome-review-1.0.0-adverse-disciplined",
+        ("attribution", "factors", 0, "confidence"),
+        ["low", "medium", "high"],
+    ),
 ]
 
 
@@ -217,12 +268,79 @@ class SchemaCompatibilityTests(unittest.TestCase):
                 with self.subTest(contract=contract_name, path=path, value=value):
                     self.assertEqual([], list(validator.iter_errors(instance)))
 
+    def test_outcome_review_invalidation_vocabulary_remains_complete(self) -> None:
+        expected_pairs = {
+            "not_triggered": {"not_applicable"},
+            "triggered": {
+                "followed",
+                "delayed",
+                "not_followed",
+                "ambiguous",
+                "unknown",
+            },
+            "ambiguous": {"ambiguous", "unknown"},
+            "unknown": {"unknown"},
+            "not_applicable": {"not_applicable"},
+        }
+        self.assertEqual(expected_pairs, OUTCOME_INVALIDATION_RESPONSES)
+
+        schema = load_json("schemas/v1/outcome-review.schema.json")
+        self.assertEqual(
+            list(expected_pairs),
+            schema["$defs"]["invalidation_trigger"]["properties"]["state"]["enum"],
+        )
+        self.assertEqual(
+            [
+                "followed",
+                "delayed",
+                "not_followed",
+                "ambiguous",
+                "unknown",
+                "not_applicable",
+            ],
+            schema["$defs"]["invalidation_response"]["properties"]["state"]["enum"],
+        )
+
+    def test_outcome_review_prior_reference_remains_accepted(self) -> None:
+        validator = validator_for(
+            self.contracts["outcome-review"]["schema_path"]
+        )
+        instance = copy.deepcopy(
+            self.fixture("outcome-review", "outcome-review-1.0.0-adverse-disciplined")
+        )
+        instance["prior_review_ref"] = "orv_SYNTH000000000099"
+        self.assertEqual([], list(validator.iter_errors(instance)))
+
     def test_historical_length_boundaries_remain_accepted(self) -> None:
         cases = [
             ("report-manifest", "report-manifest-1.0.0-complete", ("report_id",), "R" * 160),
             ("investment-idea", "investment-idea-1.0.0", ("idea_id",), "I" * 160),
             ("investment-idea", "investment-idea-1.0.0", ("asset", "symbol"), "S" * 32),
             ("decision-record", "decision-record-1.0.0", ("decision_id",), "D" * 160),
+            (
+                "outcome-review",
+                "outcome-review-1.0.0-adverse-disciplined",
+                ("review_id",),
+                "orv_" + "R" * 16,
+            ),
+            (
+                "outcome-review",
+                "outcome-review-1.0.0-adverse-disciplined",
+                ("links", "decision_ref"),
+                "ref_" + "D" * 16,
+            ),
+            (
+                "outcome-review",
+                "outcome-review-1.0.0-adverse-disciplined",
+                ("review_id",),
+                "orv_" + "R" * 128,
+            ),
+            (
+                "outcome-review",
+                "outcome-review-1.0.0-adverse-disciplined",
+                ("links", "decision_ref"),
+                "ref_" + "D" * 128,
+            ),
         ]
         for contract_name, fixture_id, path, value in cases:
             validator = validator_for(self.contracts[contract_name]["schema_path"])

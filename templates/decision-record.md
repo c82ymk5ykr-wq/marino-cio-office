@@ -1,6 +1,7 @@
 # CIO decision record
 
 > Store real decisions privately. This template documents the contract only.
+> Never add hindsight here; append it in a separate private outcome review.
 
 - Decision ID: `<stable-id>`
 - Idea ID: `<linked-idea-id>`

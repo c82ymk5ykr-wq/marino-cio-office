@@ -54,7 +54,10 @@ See [the public/private boundary](docs/public-private-boundary.md) and
 - [Report manifest schema](schemas/v1/report-manifest.schema.json)
 - [Investment idea schema](schemas/v1/investment-idea.schema.json)
 - [Decision record schema](schemas/v1/decision-record.schema.json)
+- [Outcome-review contract](docs/outcome-review-contract.md)
+- [Outcome-review schema](schemas/v1/outcome-review.schema.json)
 - [Daily decision report template](templates/daily-decision-report.md)
+- [Outcome-review template](templates/outcome-review.md)
 - [Roadmap](ROADMAP.md)
 - [Architecture decisions](docs/decisions/README.md)
 

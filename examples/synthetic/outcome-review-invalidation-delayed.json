@@ -1,0 +1,86 @@
+{
+  "schema_version": "1.0.0",
+  "review_id": "orv_SYNTH000000000004",
+  "prior_review_ref": "orv_SYNTH000000000008",
+  "links": {
+    "decision_ref": "ref_SYNTH000000000016",
+    "idea_ref": "ref_SYNTH000000000017",
+    "evidence_refs": [
+      "ref_SYNTH000000000018",
+      "ref_SYNTH000000000019",
+      "ref_SYNTH000000000020"
+    ]
+  },
+  "clocks": {
+    "decision_recorded_at": "2099-04-01T09:00:00Z",
+    "evaluation_started_at": "2099-04-02T09:00:00Z",
+    "evidence_cutoff_at": "2099-04-10T09:00:00Z",
+    "reviewed_at": "2099-04-11T09:00:00Z"
+  },
+  "review_assessability": "assessable",
+  "evidence_quality": "verified",
+  "research_outcome": {
+    "assessment_state": "assessable",
+    "classification": "mixed",
+    "evidence_refs": [
+      "ref_SYNTH000000000018"
+    ],
+    "note": "Fictional observations were mixed at the invented cutoff."
+  },
+  "decision_quality": {
+    "assessment_state": "assessable",
+    "classification": "mixed",
+    "evidence_refs": [
+      "ref_SYNTH000000000019"
+    ],
+    "note": "The fictional ex-ante record contained both sound and weak elements."
+  },
+  "process_quality": {
+    "assessment_state": "assessable",
+    "classification": "undisciplined",
+    "evidence_refs": [
+      "ref_SYNTH000000000019"
+    ],
+    "note": "The invented process did not respond within its private policy."
+  },
+  "timing_discipline": {
+    "assessment_state": "assessable",
+    "classification": "undisciplined",
+    "evidence_refs": [
+      "ref_SYNTH000000000020"
+    ],
+    "note": "The fictional response was categorically delayed without publishing a threshold."
+  },
+  "invalidation_trigger": {
+    "state": "triggered",
+    "triggered_at": "2099-04-05T09:00:00Z",
+    "evidence_refs": [
+      "ref_SYNTH000000000018"
+    ],
+    "note": "A visibly fictional invalidation condition was observed."
+  },
+  "invalidation_response": {
+    "state": "delayed",
+    "responded_at": "2099-04-08T09:00:00Z",
+    "evidence_refs": [
+      "ref_SYNTH000000000020"
+    ],
+    "note": "The invented response was delayed under an undisclosed private policy."
+  },
+  "attribution": {
+    "assessment_state": "assessable",
+    "factors": [
+      {
+        "category": "invalidation_handling",
+        "direction": "detracting",
+        "confidence": "high",
+        "evidence_refs": [
+          "ref_SYNTH000000000018",
+          "ref_SYNTH000000000020"
+        ],
+        "note": "Fictional evidence supports a delayed-response association."
+      }
+    ],
+    "note": "No threshold, deployment action, or numeric contribution is published."
+  }
+}

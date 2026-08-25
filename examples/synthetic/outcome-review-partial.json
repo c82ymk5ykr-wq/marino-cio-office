@@ -1,0 +1,67 @@
+{
+  "schema_version": "1.0.0",
+  "review_id": "orv_SYNTH000000000005",
+  "links": {
+    "decision_ref": "ref_SYNTH000000000021",
+    "idea_ref": "ref_SYNTH000000000022",
+    "evidence_refs": [
+      "ref_SYNTH000000000023"
+    ]
+  },
+  "clocks": {
+    "decision_recorded_at": "2099-05-01T09:00:00Z",
+    "evaluation_started_at": "2099-05-02T09:00:00Z",
+    "evidence_cutoff_at": "2099-05-10T09:00:00Z",
+    "reviewed_at": "2099-05-11T09:00:00Z"
+  },
+  "review_assessability": "partial",
+  "evidence_quality": "partial",
+  "research_outcome": {
+    "assessment_state": "partial",
+    "classification": "mixed",
+    "evidence_refs": [
+      "ref_SYNTH000000000023"
+    ],
+    "note": "Only one invented observation is retained, so the fictional outcome is partial."
+  },
+  "decision_quality": {
+    "assessment_state": "unknown",
+    "evidence_refs": [],
+    "note": "The fictional ex-ante support needed for this axis is not retained."
+  },
+  "process_quality": {
+    "assessment_state": "unavailable",
+    "evidence_refs": [],
+    "note": "The invented process history is unavailable and was not reconstructed."
+  },
+  "timing_discipline": {
+    "assessment_state": "not_applicable",
+    "evidence_refs": [],
+    "note": "The fictional case has no applicable timing assessment."
+  },
+  "invalidation_trigger": {
+    "state": "unknown",
+    "evidence_refs": [],
+    "note": "The fictional invalidation history cannot be established."
+  },
+  "invalidation_response": {
+    "state": "unknown",
+    "evidence_refs": [],
+    "note": "A response cannot be assessed while the fictional trigger history is unknown."
+  },
+  "attribution": {
+    "assessment_state": "partial",
+    "factors": [
+      {
+        "category": "evidence_quality",
+        "direction": "unclear",
+        "confidence": "low",
+        "evidence_refs": [
+          "ref_SYNTH000000000023"
+        ],
+        "note": "The single fictional evidence link permits only a low-confidence qualitative association."
+      }
+    ],
+    "note": "Unavailable history remains explicit and no missing record is reconstructed."
+  }
+}

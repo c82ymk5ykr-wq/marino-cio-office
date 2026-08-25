@@ -51,7 +51,9 @@ surface contract failures clearly.
 
 ## Phase 4 — Learning loop
 
-- [ ] Define private outcome-review and decision-attribution interfaces.
+- [ ] Define private outcome-review and decision-attribution interfaces
+      ([contract](docs/outcome-review-contract.md), pending categorical private
+      producer/consumer conformance).
 - [ ] Measure idea novelty, repeat quality, timing discipline, and invalidations.
 - [ ] Feed approved lessons into Chief Historian review and future decisions.
 

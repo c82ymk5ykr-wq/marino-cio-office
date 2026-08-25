@@ -1,0 +1,85 @@
+{
+  "schema_version": "1.0.0",
+  "review_id": "orv_SYNTH000000000003",
+  "links": {
+    "decision_ref": "ref_SYNTH000000000011",
+    "idea_ref": "ref_SYNTH000000000012",
+    "evidence_refs": [
+      "ref_SYNTH000000000013",
+      "ref_SYNTH000000000014",
+      "ref_SYNTH000000000015"
+    ]
+  },
+  "clocks": {
+    "decision_recorded_at": "2099-03-01T09:00:00Z",
+    "evaluation_started_at": "2099-03-02T09:00:00Z",
+    "evidence_cutoff_at": "2099-03-10T09:00:00Z",
+    "reviewed_at": "2099-03-11T09:00:00Z"
+  },
+  "review_assessability": "assessable",
+  "evidence_quality": "verified",
+  "research_outcome": {
+    "assessment_state": "assessable",
+    "classification": "adverse",
+    "evidence_refs": [
+      "ref_SYNTH000000000013"
+    ],
+    "note": "Fictional observations challenged the invented research case."
+  },
+  "decision_quality": {
+    "assessment_state": "assessable",
+    "classification": "sound",
+    "evidence_refs": [
+      "ref_SYNTH000000000014"
+    ],
+    "note": "The invented ex-ante decision documented the condition later observed."
+  },
+  "process_quality": {
+    "assessment_state": "assessable",
+    "classification": "disciplined",
+    "evidence_refs": [
+      "ref_SYNTH000000000014"
+    ],
+    "note": "The fictional process retained and checked the original invalidation condition."
+  },
+  "timing_discipline": {
+    "assessment_state": "assessable",
+    "classification": "disciplined",
+    "evidence_refs": [
+      "ref_SYNTH000000000015"
+    ],
+    "note": "The invented response followed the applicable private timing policy."
+  },
+  "invalidation_trigger": {
+    "state": "triggered",
+    "triggered_at": "2099-03-06T09:00:00Z",
+    "evidence_refs": [
+      "ref_SYNTH000000000013"
+    ],
+    "note": "A visibly fictional invalidation condition was observed."
+  },
+  "invalidation_response": {
+    "state": "followed",
+    "responded_at": "2099-03-06T10:00:00Z",
+    "evidence_refs": [
+      "ref_SYNTH000000000015"
+    ],
+    "note": "The invented response followed the fictional condition without recording any deployment action."
+  },
+  "attribution": {
+    "assessment_state": "assessable",
+    "factors": [
+      {
+        "category": "invalidation_handling",
+        "direction": "supporting",
+        "confidence": "high",
+        "evidence_refs": [
+          "ref_SYNTH000000000013",
+          "ref_SYNTH000000000015"
+        ],
+        "note": "Fictional evidence supports a disciplined invalidation-response assessment."
+      }
+    ],
+    "note": "The qualitative association makes no causal or investment-performance claim."
+  }
+}

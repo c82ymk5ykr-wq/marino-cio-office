@@ -44,10 +44,13 @@ REQUIRED_FILES = {
     "docs/decisions/0004-verifiable-idea-lineage.md",
     "docs/decisions/0005-v1-schema-compatibility-gate.md",
     "docs/decisions/0006-deterministic-report-acceptance.md",
+    "docs/decisions/0007-private-contract-adoption-attestation.md",
+    "docs/decisions/0008-append-only-outcome-review.md",
     "docs/decisions/README.md",
     "docs/contract-vocabulary.md",
     "docs/idea-lineage-metrics.md",
     "docs/operating-model.md",
+    "docs/outcome-review-contract.md",
     "docs/public-private-boundary.md",
     "docs/report-acceptance-gates.md",
     "docs/schema-compatibility-policy.md",
@@ -61,6 +64,13 @@ REQUIRED_FILES = {
     "examples/synthetic/investment-idea-repeat-unchanged.json",
     "examples/synthetic/investment-idea-stale-repeat.json",
     "examples/synthetic/investment-idea-unverified-lineage.json",
+    "examples/synthetic/outcome-review-adverse-disciplined.json",
+    "examples/synthetic/outcome-review-favorable-undisciplined.json",
+    "examples/synthetic/outcome-review-invalidation-delayed.json",
+    "examples/synthetic/outcome-review-invalidation-followed.json",
+    "examples/synthetic/outcome-review-partial.json",
+    "examples/synthetic/outcome-review-unknown-unverified.json",
+    "examples/synthetic/outcome-review-unavailable.json",
     "examples/synthetic/report-acceptance-cases.json",
     "examples/synthetic/report-manifest-legacy-1.0.json",
     "examples/synthetic/report-manifest.json",
@@ -68,22 +78,26 @@ REQUIRED_FILES = {
     "requirements-validation.txt",
     "schemas/v1/decision-record.schema.json",
     "schemas/v1/investment-idea.schema.json",
+    "schemas/v1/outcome-review.schema.json",
     "schemas/v1/report-manifest.schema.json",
     "scripts/validate.py",
     "templates/architecture-decision.md",
     "templates/daily-decision-report.md",
     "templates/decision-record.md",
+    "templates/outcome-review.md",
     "tests/compatibility/v1-fixtures.json",
     "tests/schema_helpers.py",
     "tests/test_report_acceptance.py",
     "tests/test_schema_compatibility.py",
     "tests/test_schema_validation.py",
+    "tests/test_outcome_review.py",
 }
 
 SCHEMA_FIXTURE_FAMILIES = {
     Path("schemas/v1/report-manifest.schema.json"): "report-manifest",
     Path("schemas/v1/investment-idea.schema.json"): "investment-idea",
     Path("schemas/v1/decision-record.schema.json"): "decision-record",
+    Path("schemas/v1/outcome-review.schema.json"): "outcome-review",
 }
 
 FORBIDDEN_DIRECTORIES = {
@@ -153,6 +167,9 @@ def walk_timestamps(value: object, location: str, errors: list[str]) -> None:
     timestamp_keys = {
         "checked_at",
         "data_as_of",
+        "decision_recorded_at",
+        "evaluation_started_at",
+        "evidence_cutoff_at",
         "first_seen_at",
         "generated_at",
         "last_seen_at",
@@ -161,8 +178,11 @@ def walk_timestamps(value: object, location: str, errors: list[str]) -> None:
         "oldest_material_source_as_of",
         "persisted_at",
         "recorded_at",
+        "responded_at",
         "retrieved_at",
         "review_by",
+        "reviewed_at",
+        "triggered_at",
     }
 
     if isinstance(value, dict):
@@ -1534,6 +1554,559 @@ def validate_idea_fixture(
     return classification
 
 
+OUTCOME_REVIEW_AXES = (
+    "research_outcome",
+    "decision_quality",
+    "process_quality",
+    "timing_discipline",
+)
+
+OUTCOME_INVALIDATION_RESPONSES = {
+    "not_triggered": {"not_applicable"},
+    "triggered": {
+        "followed",
+        "delayed",
+        "not_followed",
+        "ambiguous",
+        "unknown",
+    },
+    "ambiguous": {"ambiguous", "unknown"},
+    "unknown": {"unknown"},
+    "not_applicable": {"not_applicable"},
+}
+
+OUTCOME_REVIEW_FORBIDDEN_KEYS = {
+    "account",
+    "accountdata",
+    "accountid",
+    "action",
+    "alpha",
+    "allocation",
+    "allocations",
+    "asset",
+    "benchmark",
+    "benchmarks",
+    "client",
+    "clientdata",
+    "clientid",
+    "deployment",
+    "deploymentaction",
+    "deploymentactions",
+    "holding",
+    "holdings",
+    "pandl",
+    "payloadhash",
+    "performance",
+    "pnl",
+    "position",
+    "positions",
+    "positionsize",
+    "positionsizes",
+    "price",
+    "prices",
+    "profitloss",
+    "portfolio",
+    "researchdisposition",
+    "return",
+    "returnpct",
+    "returns",
+    "symbol",
+    "ticker",
+    "trade",
+    "trades",
+    "transaction",
+    "transactions",
+}
+
+OUTCOME_ATTRIBUTION_FORBIDDEN_KEYS = {
+    "causalprobability",
+    "causalstatus",
+    "contribution",
+    "contributionweight",
+    "percent",
+    "score",
+    "weight",
+}
+
+
+def normalize_outcome_review_key(value: str) -> str:
+    """Normalize a JSON key for defensive public-boundary checks."""
+
+    return re.sub(r"[^a-z0-9]+", "", value.lower().replace("&", "and"))
+
+
+def validate_outcome_review_payload_boundary(
+    value: object,
+    location: str,
+    errors: list[str],
+    *,
+    inside_attribution: bool = False,
+) -> None:
+    """Reject performance, account, deployment, causal, and numeric payload data."""
+
+    if isinstance(value, dict):
+        for key, child in value.items():
+            child_location = f"{location}.{key}"
+            normalized = normalize_outcome_review_key(key)
+            if normalized in OUTCOME_REVIEW_FORBIDDEN_KEYS:
+                errors.append(
+                    f"{child_location}: prohibited private, performance, or "
+                    "deployment field"
+                )
+            child_inside_attribution = inside_attribution or key == "attribution"
+            if (
+                child_inside_attribution
+                and normalized in OUTCOME_ATTRIBUTION_FORBIDDEN_KEYS
+            ):
+                errors.append(
+                    f"{child_location}: numeric or causal attribution field is prohibited"
+                )
+            validate_outcome_review_payload_boundary(
+                child,
+                child_location,
+                errors,
+                inside_attribution=child_inside_attribution,
+            )
+    elif isinstance(value, list):
+        for index, child in enumerate(value):
+            validate_outcome_review_payload_boundary(
+                child,
+                f"{location}[{index}]",
+                errors,
+                inside_attribution=inside_attribution,
+            )
+    elif isinstance(value, (int, float)) and not isinstance(value, bool):
+        errors.append(
+            f"{location}: numeric values are not permitted in outcome-review artifacts"
+        )
+
+
+def validate_outcome_review(
+    review: object, path: Path, errors: list[str]
+) -> None:
+    """Validate cross-field semantics for one public-safe outcome review."""
+
+    location = str(path)
+    require_keys(
+        review,
+        {
+            "schema_version",
+            "review_id",
+            "links",
+            "clocks",
+            "review_assessability",
+            "evidence_quality",
+            *OUTCOME_REVIEW_AXES,
+            "invalidation_trigger",
+            "invalidation_response",
+            "attribution",
+        },
+        location,
+        errors,
+    )
+    if not isinstance(review, dict):
+        return
+
+    validate_outcome_review_payload_boundary(review, location, errors)
+
+    if review.get("schema_version") != "1.0.0":
+        errors.append(f"{location}.schema_version: expected 1.0.0")
+
+    review_id = review.get("review_id")
+    prior_review_ref = review.get("prior_review_ref")
+    if (
+        isinstance(review_id, str)
+        and isinstance(prior_review_ref, str)
+        and review_id == prior_review_ref
+    ):
+        errors.append(f"{location}.prior_review_ref: review cannot refer to itself")
+
+    links = review.get("links")
+    declared_refs: list[object] = []
+    if isinstance(links, dict):
+        raw_refs = links.get("evidence_refs")
+        if isinstance(raw_refs, list):
+            declared_refs = raw_refs
+            string_refs = [value for value in raw_refs if isinstance(value, str)]
+            if len(string_refs) != len(set(string_refs)):
+                errors.append(f"{location}.links.evidence_refs: duplicate reference")
+    declared_ref_set = {
+        value for value in declared_refs if isinstance(value, str)
+    }
+    if isinstance(links, dict):
+        decision_ref = links.get("decision_ref")
+        idea_ref = links.get("idea_ref")
+        if (
+            isinstance(decision_ref, str)
+            and isinstance(idea_ref, str)
+            and decision_ref == idea_ref
+        ):
+            errors.append(
+                f"{location}.links: decision_ref and idea_ref must be distinct"
+            )
+        for field_name, value in (
+            ("decision_ref", decision_ref),
+            ("idea_ref", idea_ref),
+        ):
+            if isinstance(value, str) and value in declared_ref_set:
+                errors.append(
+                    f"{location}.links.{field_name}: identity reference cannot "
+                    "also be an evidence reference"
+                )
+
+    public_fixture = (
+        "examples/synthetic/" in location
+        or "tests/compatibility/" in location
+    )
+    if public_fixture:
+        if not isinstance(review_id, str) or not review_id.startswith("orv_SYNTH"):
+            errors.append(f"{location}.review_id: public fixture must be visibly synthetic")
+        if isinstance(prior_review_ref, str) and not prior_review_ref.startswith(
+            "orv_SYNTH"
+        ):
+            errors.append(
+                f"{location}.prior_review_ref: public fixture must be visibly synthetic"
+            )
+        if isinstance(links, dict):
+            link_values = [links.get("decision_ref"), links.get("idea_ref")]
+            link_values.extend(declared_refs)
+            for value in link_values:
+                if not isinstance(value, str) or not value.startswith("ref_SYNTH"):
+                    errors.append(
+                        f"{location}.links: public references must be visibly synthetic"
+                    )
+
+    clocks = review.get("clocks")
+    clock_names = (
+        "decision_recorded_at",
+        "evaluation_started_at",
+        "evidence_cutoff_at",
+        "reviewed_at",
+    )
+    parsed_clocks: dict[str, datetime] = {}
+    if isinstance(clocks, dict):
+        for name in clock_names:
+            parsed = timestamp_value(clocks.get(name))
+            if parsed is None:
+                errors.append(f"{location}.clocks.{name}: invalid UTC timestamp")
+            else:
+                parsed_clocks[name] = parsed
+        for earlier_name, later_name in zip(clock_names, clock_names[1:]):
+            earlier = parsed_clocks.get(earlier_name)
+            later = parsed_clocks.get(later_name)
+            if earlier is not None and later is not None and earlier > later:
+                errors.append(
+                    f"{location}.clocks: {earlier_name} cannot be after {later_name}"
+                )
+    else:
+        errors.append(f"{location}.clocks: expected an object")
+
+    trigger = review.get("invalidation_trigger")
+    response = review.get("invalidation_response")
+    raw_trigger_state = trigger.get("state") if isinstance(trigger, dict) else None
+    raw_response_state = response.get("state") if isinstance(response, dict) else None
+    trigger_state = raw_trigger_state if isinstance(raw_trigger_state, str) else None
+    response_state = (
+        raw_response_state if isinstance(raw_response_state, str) else None
+    )
+    allowed_responses = (
+        OUTCOME_INVALIDATION_RESPONSES.get(trigger_state)
+        if isinstance(trigger_state, str)
+        else None
+    )
+    if allowed_responses is None:
+        errors.append(f"{location}.invalidation_trigger.state: invalid state")
+    elif response_state not in allowed_responses:
+        errors.append(
+            f"{location}: invalid invalidation combination "
+            f"{trigger_state!r} -> {response_state!r}"
+        )
+
+    triggered_at = (
+        timestamp_value(trigger.get("triggered_at"))
+        if isinstance(trigger, dict) and "triggered_at" in trigger
+        else None
+    )
+    if isinstance(trigger, dict) and "triggered_at" in trigger and triggered_at is None:
+        errors.append(
+            f"{location}.invalidation_trigger.triggered_at: invalid UTC timestamp"
+        )
+    if trigger_state == "triggered" and triggered_at is None:
+        errors.append(
+            f"{location}.invalidation_trigger.triggered_at: required when triggered"
+        )
+
+    responded_at = (
+        timestamp_value(response.get("responded_at"))
+        if isinstance(response, dict) and "responded_at" in response
+        else None
+    )
+    if isinstance(response, dict) and "responded_at" in response and responded_at is None:
+        errors.append(
+            f"{location}.invalidation_response.responded_at: invalid UTC timestamp"
+        )
+    if response_state in {"followed", "delayed"} and responded_at is None:
+        errors.append(
+            f"{location}.invalidation_response.responded_at: required for "
+            f"{response_state}"
+        )
+
+    decision_time = parsed_clocks.get("decision_recorded_at")
+    cutoff_time = parsed_clocks.get("evidence_cutoff_at")
+    if triggered_at is not None:
+        if decision_time is not None and triggered_at < decision_time:
+            errors.append(
+                f"{location}.invalidation_trigger.triggered_at: cannot precede decision"
+            )
+        if cutoff_time is not None and triggered_at > cutoff_time:
+            errors.append(
+                f"{location}.invalidation_trigger.triggered_at: cannot exceed evidence cutoff"
+            )
+    if responded_at is not None:
+        if triggered_at is not None and responded_at < triggered_at:
+            errors.append(
+                f"{location}.invalidation_response.responded_at: cannot precede trigger"
+            )
+        if cutoff_time is not None and responded_at > cutoff_time:
+            errors.append(
+                f"{location}.invalidation_response.responded_at: cannot exceed evidence cutoff"
+            )
+
+    used_ref_set: set[str] = set()
+
+    def validate_nested_refs(container: object, nested_location: str) -> None:
+        if not isinstance(container, dict):
+            return
+        refs = container.get("evidence_refs")
+        if not isinstance(refs, list):
+            return
+        strings = [value for value in refs if isinstance(value, str)]
+        used_ref_set.update(strings)
+        if len(strings) != len(set(strings)):
+            errors.append(f"{nested_location}.evidence_refs: duplicate reference")
+        for value in strings:
+            if value not in declared_ref_set:
+                errors.append(
+                    f"{nested_location}.evidence_refs: dangling reference {value!r}"
+                )
+
+    for axis_name in OUTCOME_REVIEW_AXES:
+        validate_nested_refs(review.get(axis_name), f"{location}.{axis_name}")
+    validate_nested_refs(trigger, f"{location}.invalidation_trigger")
+    validate_nested_refs(response, f"{location}.invalidation_response")
+
+    attribution = review.get("attribution")
+    factors = attribution.get("factors") if isinstance(attribution, dict) else None
+    if isinstance(factors, list):
+        for index, factor in enumerate(factors):
+            validate_nested_refs(
+                factor, f"{location}.attribution.factors[{index}]"
+            )
+
+    for orphan_ref in sorted(declared_ref_set - used_ref_set):
+        errors.append(
+            f"{location}.links.evidence_refs: unused reference {orphan_ref!r}"
+        )
+
+    raw_assessability = review.get("review_assessability")
+    assessability = raw_assessability if isinstance(raw_assessability, str) else None
+    evidence_quality = review.get("evidence_quality")
+    expected_quality = {
+        "assessable": "verified",
+        "partial": "partial",
+        "unknown": "unverified",
+        "unavailable": "unavailable",
+    }.get(assessability)
+    if expected_quality is None:
+        errors.append(f"{location}.review_assessability: invalid state")
+    elif evidence_quality != expected_quality:
+        errors.append(
+            f"{location}: {assessability!r} review requires "
+            f"evidence_quality {expected_quality!r}"
+        )
+
+    axis_states: dict[str, str | None] = {}
+    for name in OUTCOME_REVIEW_AXES:
+        value = review.get(name)
+        raw_state = value.get("assessment_state") if isinstance(value, dict) else None
+        axis_states[name] = raw_state if isinstance(raw_state, str) else None
+    raw_attribution_state = (
+        attribution.get("assessment_state")
+        if isinstance(attribution, dict)
+        else None
+    )
+    attribution_state = (
+        raw_attribution_state if isinstance(raw_attribution_state, str) else None
+    )
+
+    for name in ("research_outcome", "decision_quality", "process_quality"):
+        if axis_states.get(name) == "not_applicable":
+            errors.append(
+                f"{location}.{name}.assessment_state: intrinsic axis cannot be "
+                "not_applicable"
+            )
+
+    if assessability == "assessable":
+        if not declared_ref_set:
+            errors.append(
+                f"{location}.links.evidence_refs: assessable review needs evidence"
+            )
+        for name in ("research_outcome", "decision_quality", "process_quality"):
+            if axis_states.get(name) != "assessable":
+                errors.append(
+                    f"{location}.{name}.assessment_state: assessable review "
+                    "requires an assessable intrinsic axis"
+                )
+        if axis_states.get("timing_discipline") not in {
+            "assessable",
+            "not_applicable",
+        }:
+            errors.append(
+                f"{location}.timing_discipline.assessment_state: assessable "
+                "review cannot contain a limited applicable timing axis"
+            )
+        if attribution_state not in {"assessable", "not_applicable"}:
+            errors.append(
+                f"{location}.attribution.assessment_state: assessable review "
+                "cannot contain a limited attribution axis"
+            )
+        if trigger_state in {"ambiguous", "unknown"} or response_state in {
+            "ambiguous",
+            "unknown",
+        }:
+            errors.append(
+                f"{location}: assessable review cannot contain uncertain "
+                "invalidation handling"
+            )
+
+    elif assessability == "partial":
+        if not declared_ref_set:
+            errors.append(f"{location}.links.evidence_refs: partial review needs evidence")
+        states = set(axis_states.values()) | {attribution_state}
+        limited_invalidation = trigger_state in {"ambiguous", "unknown"} or (
+            response_state in {"ambiguous", "unknown"}
+        )
+        if not states.intersection({"partial", "unavailable", "unknown"}) and not (
+            limited_invalidation
+        ):
+            errors.append(f"{location}: partial review must expose a limited axis")
+        if not states.intersection({"assessable", "partial"}):
+            errors.append(f"{location}: partial review needs one useful assessment")
+
+    elif assessability == "unknown":
+        if declared_ref_set:
+            errors.append(
+                f"{location}.links.evidence_refs: unknown review cannot claim "
+                "supporting evidence"
+            )
+        for name in OUTCOME_REVIEW_AXES:
+            if axis_states.get(name) not in {"unknown", "not_applicable"}:
+                errors.append(
+                    f"{location}.{name}.assessment_state: unknown review cannot "
+                    "make a substantive assessment"
+                )
+        if attribution_state not in {"unknown", "not_applicable"}:
+            errors.append(
+                f"{location}.attribution.assessment_state: unknown review cannot "
+                "claim attribution"
+            )
+        if (trigger_state, response_state) not in {
+            ("unknown", "unknown"),
+            ("not_applicable", "not_applicable"),
+        }:
+            errors.append(
+                f"{location}: unknown review cannot claim invalidation handling"
+            )
+
+    elif assessability == "unavailable":
+        if declared_ref_set:
+            errors.append(
+                f"{location}.links.evidence_refs: unavailable review must omit evidence"
+            )
+        for name in OUTCOME_REVIEW_AXES:
+            if axis_states.get(name) != "unavailable":
+                errors.append(
+                    f"{location}.{name}.assessment_state: unavailable review "
+                    "requires unavailable axes"
+                )
+        if (trigger_state, response_state) != ("unknown", "unknown"):
+            errors.append(
+                f"{location}: unavailable review requires unknown invalidation history"
+            )
+        if attribution_state != "unavailable" or (
+            isinstance(factors, list) and factors
+        ):
+            errors.append(
+                f"{location}.attribution: unavailable review cannot claim factors"
+            )
+
+
+def validate_outcome_review_fixture_coverage(
+    reviews: list[tuple[Path, object]], errors: list[str]
+) -> None:
+    """Require invented fixtures for the issue's independent-axis scenarios."""
+
+    usable = [review for _, review in reviews if isinstance(review, dict)]
+    review_ids = [
+        review.get("review_id")
+        for review in usable
+        if isinstance(review.get("review_id"), str)
+    ]
+    if len(review_ids) != len(set(review_ids)):
+        errors.append("synthetic outcome reviews must use unique review IDs")
+
+    def nested_text(review: dict[str, object], section: str, field: str) -> str | None:
+        container = review.get(section)
+        if not isinstance(container, dict):
+            return None
+        value = container.get(field)
+        return value if isinstance(value, str) else None
+
+    scenarios = {
+        "adverse outcome with disciplined process": any(
+            nested_text(review, "research_outcome", "classification") == "adverse"
+            and nested_text(review, "process_quality", "classification") == "disciplined"
+            for review in usable
+        ),
+        "favorable outcome with undisciplined process": any(
+            nested_text(review, "research_outcome", "classification") == "favorable"
+            and nested_text(review, "process_quality", "classification") == "undisciplined"
+            for review in usable
+        ),
+        "triggered invalidation followed": any(
+            nested_text(review, "invalidation_trigger", "state") == "triggered"
+            and nested_text(review, "invalidation_response", "state") == "followed"
+            for review in usable
+        ),
+        "triggered invalidation delayed or not followed": any(
+            nested_text(review, "invalidation_trigger", "state") == "triggered"
+            and nested_text(review, "invalidation_response", "state")
+            in ("delayed", "not_followed")
+            for review in usable
+        ),
+        "partial or unverified review": any(
+            review.get("review_assessability") == "partial"
+            or review.get("evidence_quality") == "unverified"
+            for review in usable
+        ),
+    }
+    for name, covered in scenarios.items():
+        if not covered:
+            errors.append(f"synthetic outcome-review fixtures must cover {name}")
+
+    required_assessability = {"assessable", "partial", "unknown", "unavailable"}
+    actual_assessability = {
+        value
+        for review in usable
+        if isinstance((value := review.get("review_assessability")), str)
+    }
+    if not required_assessability.issubset(actual_assessability):
+        errors.append(
+            "synthetic outcome reviews must cover assessable, partial, unknown, "
+            "and unavailable review states"
+        )
+
+
 def validate_examples(parsed: dict[Path, object], errors: list[str]) -> None:
     report_path = Path("examples/synthetic/report-manifest.json")
     legacy_report_path = Path("examples/synthetic/report-manifest-legacy-1.0.json")
@@ -1557,6 +2130,14 @@ def validate_examples(parsed: dict[Path, object], errors: list[str]) -> None:
         and path.suffix == ".json"
     )
     ideas = [(path, parsed.get(path)) for path in idea_paths]
+    outcome_paths = sorted(
+        path
+        for path in parsed
+        if path.parent == Path("examples/synthetic")
+        and path.name.startswith("outcome-review")
+        and path.suffix == ".json"
+    )
+    outcome_reviews = [(path, parsed.get(path)) for path in outcome_paths]
 
     require_keys(
         report,
@@ -1606,6 +2187,7 @@ def validate_examples(parsed: dict[Path, object], errors: list[str]) -> None:
         (legacy_report_path, legacy_report),
         (decision_path, decision),
         *ideas,
+        *outcome_reviews,
     ]:
         walk_timestamps(value, str(path), errors)
 
@@ -1620,6 +2202,10 @@ def validate_examples(parsed: dict[Path, object], errors: list[str]) -> None:
         )
     if isinstance(decision, dict) and decision.get("schema_version") != "1.0.0":
         errors.append(f"{decision_path}: synthetic decision must use schema version 1.0.0")
+
+    for path, review in outcome_reviews:
+        validate_outcome_review(review, path, errors)
+    validate_outcome_review_fixture_coverage(outcome_reviews, errors)
 
     source_statuses: dict[str, str] = {}
     if isinstance(report, dict):
@@ -1844,6 +2430,23 @@ def validate_examples(parsed: dict[Path, object], errors: list[str]) -> None:
                 validate_report_manifest_acceptance(
                     fixture.get("instance"),
                     Path(f"{compatibility_path}::report-manifest[{index}]"),
+                    errors,
+                )
+        outcome_contract = (
+            contracts.get("outcome-review") if isinstance(contracts, dict) else None
+        )
+        outcome_fixtures = (
+            outcome_contract.get("fixtures")
+            if isinstance(outcome_contract, dict)
+            else None
+        )
+        if isinstance(outcome_fixtures, list):
+            for index, fixture in enumerate(outcome_fixtures):
+                if not isinstance(fixture, dict):
+                    continue
+                validate_outcome_review(
+                    fixture.get("instance"),
+                    Path(f"{compatibility_path}::outcome-review[{index}]"),
                     errors,
                 )
     validate_report_acceptance_cases(acceptance, errors)
