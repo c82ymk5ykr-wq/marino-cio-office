@@ -147,6 +147,12 @@ it must be resolved without inventing a timestamp.
 | `evidence[].source_id` | Source identifier supporting the claim |
 | `evidence[].provenance` | How the evidence entered the decision product |
 | `evidence[].claim` | Claim supported or inferred from the identified evidence |
+| `lineage.status` | Whether retained history verifies the lineage classification |
+| `lineage.classification` | Mutually exclusive new, repeat, material-update, reintroduction, stale-repeat, or unverified state |
+| `lineage.last_material_change_at` | Most recent verified decision-changing change |
+| `lineage.repeat_count` | Verified appearances after the first, including the current repeat |
+| `lineage.changed_dimensions` | Material dimensions changed in the current appearance |
+| `lineage.verification_note` | Explanation required when retained history cannot support a classification |
 | `repeat_reason` | Decision-useful explanation required by policy when an idea materially repeats |
 
 `board` permits the three research boards only: Fresh Idea Discovery, Core

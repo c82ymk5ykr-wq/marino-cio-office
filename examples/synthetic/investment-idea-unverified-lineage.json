@@ -1,0 +1,40 @@
+{
+  "schema_version": "1.1.0",
+  "idea_id": "synthetic-idea-unverified-001",
+  "first_seen_at": "2026-01-15T13:58:00Z",
+  "last_seen_at": "2026-01-15T14:00:00Z",
+  "lineage": {
+    "status": "unverified",
+    "classification": "unverified",
+    "changed_dimensions": [],
+    "verification_note": "The fictional retained archive is intentionally unavailable, so no new-or-repeat claim is made."
+  },
+  "board": "FRESH_IDEA_DISCOVERY",
+  "research_state": "candidate",
+  "asset": {
+    "symbol": "SYNTH-06",
+    "name": "Fictional Signal Systems",
+    "asset_type": "equity"
+  },
+  "thesis": "A fictional example demonstrates how to preserve an idea without inventing its history.",
+  "regime_fit": "No real regime conclusion is supported by the synthetic example.",
+  "catalysts": [
+    "A fictional archive verification could establish lineage later."
+  ],
+  "risks": [
+    "The inaccessible fictional history contains contradictory prior evidence."
+  ],
+  "invalidation_conditions": [
+    "The fictional archive disproves the current research case."
+  ],
+  "time_horizon": "Illustrative research horizon pending lineage verification.",
+  "timing_notes": "Unverified lineage prevents a freshness claim and any deployment implication.",
+  "confidence": "low",
+  "evidence": [
+    {
+      "source_id": "synthetic-market-snapshot",
+      "provenance": "INLINE",
+      "claim": "A fictional current observation exists, but retained lineage is unavailable."
+    }
+  ]
+}

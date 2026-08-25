@@ -1,0 +1,42 @@
+{
+  "schema_version": "1.1.0",
+  "idea_id": "synthetic-idea-repeat-001",
+  "first_seen_at": "2026-01-10T14:00:00Z",
+  "last_seen_at": "2026-01-15T14:00:00Z",
+  "lineage": {
+    "status": "verified",
+    "classification": "repeat_unchanged",
+    "last_material_change_at": "2026-01-10T14:00:00Z",
+    "repeat_count": 2,
+    "changed_dimensions": []
+  },
+  "board": "CORE_CONVICTION_MONITOR",
+  "research_state": "monitor",
+  "asset": {
+    "symbol": "SYNTH-02",
+    "name": "Fictional Water Controls",
+    "asset_type": "equity"
+  },
+  "thesis": "An invented maintenance cycle remains suitable for illustrating an unchanged monitored idea.",
+  "regime_fit": "The fictional case is neutral to the invented regime used by this example.",
+  "catalysts": [
+    "A fictional maintenance update remains pending."
+  ],
+  "risks": [
+    "The invented maintenance demand does not occur."
+  ],
+  "invalidation_conditions": [
+    "The fictional maintenance indicator falls below its invented floor."
+  ],
+  "time_horizon": "Illustrative six-month research horizon.",
+  "timing_notes": "No deployment action is implied by continued monitoring.",
+  "confidence": "low",
+  "evidence": [
+    {
+      "source_id": "synthetic-market-snapshot",
+      "provenance": "INLINE",
+      "claim": "Current fictional evidence remains unchanged from the prior review."
+    }
+  ],
+  "repeat_reason": "The unchanged fictional case remains decision-useful because its stated review event is still pending."
+}

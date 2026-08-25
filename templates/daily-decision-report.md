@@ -9,6 +9,7 @@
 | --- | --- |
 | Report ID | `<stable-report-id>` |
 | Schema version | `1.0.0` |
+| Investment-idea schema version | `<1.0.0 | 1.1.0>` |
 | Generated at (UTC) | `<YYYY-MM-DDTHH:MM:SSZ>` |
 | Data as of (UTC) | `<YYYY-MM-DDTHH:MM:SSZ>` |
 | Status | `<complete | provisional | degraded | failed>` |
@@ -39,6 +40,32 @@ and identify the evidence that matters most today.
 
 For each idea, include first seen, last seen, why it is fresh, thesis, regime fit,
 catalysts, risks, invalidation conditions, horizon, and evidence lineage.
+
+### Idea lineage register
+
+| Idea ID | Lineage status | Classification | First seen | Last seen | Last material change | Repeat count | Changed dimensions | Repeat rationale |
+| --- | --- | --- | --- | --- | --- | ---: | --- | --- |
+| `<idea-id>` | `<verified | unverified>` | `<new | repeat_unchanged | materially_updated | reintroduced | stale_repeat | unverified>` | `<UTC>` | `<UTC>` | `<UTC or unavailable>` | `<count or unavailable>` | `<dimensions or none>` | `<reason or not applicable>` |
+
+### Anti-staleness metrics
+
+Publish raw counts, numerator, denominator, and rate. Use `not_available` for a
+zero denominator and disclose unverified or unknown exclusions.
+
+| Metric | Numerator / denominator | Rate |
+| --- | --- | ---: |
+| New-idea rate | `<N / V>` | `<percent or not_available>` |
+| Repeat rate | `<R / V>` | `<percent or not_available>` |
+| Explained-repeat rate | `<X / R>` | `<percent or not_available>` |
+| Strict material-update rate | `<M / R>` | `<percent or not_available>` |
+| Decision-changing-repeat rate | `<(M + RI) / R>` | `<percent or not_available>` |
+| Stale-repeat rate | `<S / R>` | `<percent or not_available>` |
+| Unverified-lineage share | `<U / C>` | `<percent or not_available>` |
+| Stale-evidence share | `<E / K>` | `<percent or not_available>` |
+
+Also disclose repeat count, median repeat age, maximum repeat age, and unknown
+evidence count/share. Do not publish targets, quotas, alerts, live rates, or
+performance in this public template.
 
 ## Core Conviction Monitor
 

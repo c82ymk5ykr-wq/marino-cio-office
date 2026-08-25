@@ -1,0 +1,34 @@
+{
+  "schema_version": "1.0.0",
+  "idea_id": "synthetic-idea-legacy-001",
+  "first_seen_at": "2026-01-15T14:00:00Z",
+  "last_seen_at": "2026-01-15T14:00:00Z",
+  "board": "FRESH_IDEA_DISCOVERY",
+  "research_state": "candidate",
+  "asset": {
+    "symbol": "SYNTH-L1",
+    "name": "Fictional Legacy Components",
+    "asset_type": "equity"
+  },
+  "thesis": "This visibly fictional fixture proves that the original 1.0.0 shape remains accepted.",
+  "regime_fit": "The legacy compatibility fixture makes no real regime claim.",
+  "catalysts": [
+    "A fictional compatibility check."
+  ],
+  "risks": [
+    "The fixture is mistakenly treated as a live idea."
+  ],
+  "invalidation_conditions": [
+    "The original public shape no longer validates."
+  ],
+  "time_horizon": "Synthetic compatibility horizon only.",
+  "timing_notes": "No deployment action is implied.",
+  "confidence": "low",
+  "evidence": [
+    {
+      "source_id": "synthetic-market-snapshot",
+      "provenance": "INLINE",
+      "claim": "This fictional evidence exists only to validate backward compatibility."
+    }
+  ]
+}
