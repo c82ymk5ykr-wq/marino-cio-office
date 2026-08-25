@@ -13,3 +13,4 @@ decision with a new record rather than silently rewriting its rationale.
 | ID | Status | Decision |
 | --- | --- | --- |
 | [0001](0001-public-operating-foundation.md) | Accepted | Establish a public operating foundation separate from private production |
+| [0002](0002-canonical-contract-vocabulary.md) | Accepted | Adopt one canonical public vocabulary while keeping private mappings private |

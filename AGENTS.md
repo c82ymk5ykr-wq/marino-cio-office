@@ -25,15 +25,21 @@ synthetic.
 ## Contract rules
 
 - Preserve separate `generated_at` and `data_as_of` timestamps in UTC.
+- Treat the public schema names and `docs/contract-vocabulary.md` meanings as
+  canonical; keep private aliases and mappings private.
+- Do not collapse report outcome, source health, freshness, research state,
+  deployment readiness, deployment action, or persistence into one status.
+- A `complete` or `ready` state never implies a recommendation or deployment
+  authorization.
 - Record expected and observed coverage, source health, and persistence outcome.
 - Use `complete` only when the contract's freshness and coverage gates pass.
-- Disclose failed sources and fallbacks; never fabricate completeness.
+- Disclose unavailable sources and fallbacks; never fabricate completeness.
 - Preserve the provenance labels `PASTED`, `INLINE`, and
   `CIO_LEVEL_INFERENCE`.
 - Track an idea's `first_seen_at` and `last_seen_at`; explain material repeats.
 - Separate research disposition from deployment timing, sizing, and action.
 - Keep `schemas/v1/` backward compatible. Breaking changes require a new schema
-  version directory and a decision record.
+  version directory and an Architecture Decision Record (ADR).
 - Update affected schemas, templates, synthetic examples, and documentation in
   the same change.
 
@@ -46,7 +52,7 @@ durable storage outcome.
 1. Read `README.md`, `docs/operating-model.md`, and
    `docs/public-private-boundary.md`.
 2. Keep the change as small as practical.
-3. Add a decision record for architecture, scope, status semantics, or data
+3. Add an ADR for architecture, scope, status semantics, or data
    boundary changes.
 4. Run `python3 scripts/validate.py`.
 5. Summarize contract and boundary effects in the pull request.

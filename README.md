@@ -45,6 +45,7 @@ See [the public/private boundary](docs/public-private-boundary.md) and
 ## Canonical contracts
 
 - [CIO operating model](docs/operating-model.md)
+- [Canonical contract vocabulary](docs/contract-vocabulary.md)
 - [Report manifest schema](schemas/v1/report-manifest.schema.json)
 - [Investment idea schema](schemas/v1/investment-idea.schema.json)
 - [Decision record schema](schemas/v1/decision-record.schema.json)
@@ -68,7 +69,8 @@ See [the public/private boundary](docs/public-private-boundary.md) and
 1. Read `AGENTS.md` and the public/private boundary before making changes.
 2. Use synthetic data only.
 3. Update a schema, its template, and its example together.
-4. Record architectural or boundary changes as a decision record.
+4. Record architectural or boundary changes as an Architecture Decision Record
+   (ADR).
 5. Run `python3 scripts/validate.py` before committing.
 6. Never call incomplete, stale, or materially under-covered work complete.
 
