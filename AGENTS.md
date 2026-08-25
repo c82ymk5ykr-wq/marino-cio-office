@@ -32,6 +32,8 @@ synthetic.
 - A `complete` or `ready` state never implies a recommendation or deployment
   authorization.
 - Record expected and observed coverage, source health, and persistence outcome.
+- Apply `docs/universe-completion-gates.md` to supported bounded universes;
+  minimum runtime readiness is never evidence of full universe completion.
 - Use `complete` only when the contract's freshness and coverage gates pass.
 - Disclose unavailable sources and fallbacks; never fabricate completeness.
 - Preserve the provenance labels `PASTED`, `INLINE`, and

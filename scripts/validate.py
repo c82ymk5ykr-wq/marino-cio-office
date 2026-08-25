@@ -26,12 +26,17 @@ REQUIRED_FILES = {
     "ROADMAP.md",
     "SECURITY.md",
     "docs/decisions/0001-public-operating-foundation.md",
+    "docs/decisions/0002-canonical-contract-vocabulary.md",
+    "docs/decisions/0003-deterministic-universe-completion-gates.md",
     "docs/decisions/README.md",
+    "docs/contract-vocabulary.md",
     "docs/operating-model.md",
     "docs/public-private-boundary.md",
+    "docs/universe-completion-gates.md",
     "examples/synthetic/decision-record.json",
     "examples/synthetic/investment-idea.json",
     "examples/synthetic/report-manifest.json",
+    "examples/synthetic/universe-completion-cases.json",
     "schemas/v1/decision-record.schema.json",
     "schemas/v1/investment-idea.schema.json",
     "schemas/v1/report-manifest.schema.json",
@@ -192,14 +197,229 @@ def require_keys(
         errors.append(f"{location}: missing required keys: {', '.join(missing)}")
 
 
+COMPLETION_PROFILE_IDS = {
+    "broad_equity_daily",
+    "curated_etf_daily",
+    "declared_bounded_set",
+}
+
+COMPLETION_SOURCE_STATES = {
+    "available",
+    "equivalent_fallback",
+    "stale",
+    "non_equivalent_fallback",
+    "unavailable",
+}
+
+COMPLETION_STATUSES = {"complete", "provisional", "degraded", "failed"}
+
+COMPLETION_CASE_KEYS = {
+    "artifact_status",
+    "case_id",
+    "claimed_status",
+    "conflicting_duplicate_count",
+    "current_retained",
+    "denominator_known",
+    "exact_duplicate_count",
+    "expect_valid",
+    "expected",
+    "expected_status",
+    "gap_count",
+    "observed",
+    "percent",
+    "profile_id",
+    "refreshed_this_cycle",
+    "reliable_product",
+    "required_period_lag",
+    "required_source_state",
+    "reviews_complete",
+    "stale_retained",
+}
+
+
+def is_non_negative_int(value: object) -> bool:
+    return isinstance(value, int) and not isinstance(value, bool) and value >= 0
+
+
+def derive_completion_status(case: dict[str, object]) -> str:
+    """Derive the public report status from one synthetic gate case."""
+
+    if case.get("reliable_product") is not True:
+        return "failed"
+
+    if case.get("required_source_state") in {
+        "non_equivalent_fallback",
+        "unavailable",
+    } or case.get("artifact_status") == "failed":
+        return "degraded"
+
+    if case.get("denominator_known") is not True:
+        return "provisional"
+
+    expected = case.get("expected")
+    observed = case.get("observed")
+    percent = case.get("percent")
+    gap_count = case.get("gap_count")
+    required_period_lag = case.get("required_period_lag")
+    conflicting_duplicates = case.get("conflicting_duplicate_count")
+
+    if (
+        not is_non_negative_int(expected)
+        or expected == 0
+        or not is_non_negative_int(observed)
+        or observed != expected
+        or not isinstance(percent, (int, float))
+        or isinstance(percent, bool)
+        or abs(float(percent) - 100.0) > 0.01
+        or gap_count != 0
+        or required_period_lag != 0
+        or conflicting_duplicates != 0
+        or case.get("required_source_state") == "stale"
+        or case.get("reviews_complete") is not True
+        or case.get("artifact_status") != "persisted"
+    ):
+        return "provisional"
+
+    return "complete"
+
+
+def validate_universe_completion_cases(value: object, errors: list[str]) -> None:
+    path = Path("examples/synthetic/universe-completion-cases.json")
+    location = str(path)
+    require_keys(value, {"spec_version", "profiles", "cases"}, location, errors)
+    if not isinstance(value, dict):
+        return
+
+    if value.get("spec_version") != "1.0.0":
+        errors.append(f"{location}: spec_version must be 1.0.0")
+
+    profiles = value.get("profiles")
+    if not isinstance(profiles, dict) or set(profiles) != COMPLETION_PROFILE_IDS:
+        errors.append(f"{location}: profiles must match the supported profile IDs")
+    else:
+        expected_profile = {
+            "minimum_percent": 100.0,
+            "maximum_gap_count": 0,
+            "maximum_required_period_lag": 0,
+        }
+        for profile_id, profile in profiles.items():
+            if profile != expected_profile:
+                errors.append(
+                    f"{location}.profiles.{profile_id}: profile must require "
+                    "100 percent, zero gaps, and zero required-period lag"
+                )
+
+    cases = value.get("cases")
+    if not isinstance(cases, list) or not cases:
+        errors.append(f"{location}.cases: expected a non-empty array")
+        return
+
+    seen_ids: set[str] = set()
+    integer_fields = {
+        "conflicting_duplicate_count",
+        "current_retained",
+        "exact_duplicate_count",
+        "expected",
+        "gap_count",
+        "observed",
+        "refreshed_this_cycle",
+        "required_period_lag",
+        "stale_retained",
+    }
+
+    for index, case in enumerate(cases):
+        case_location = f"{location}.cases[{index}]"
+        require_keys(case, COMPLETION_CASE_KEYS, case_location, errors)
+        if not isinstance(case, dict):
+            continue
+
+        case_id = case.get("case_id")
+        if not isinstance(case_id, str) or not case_id:
+            errors.append(f"{case_location}.case_id: expected a non-empty string")
+        elif case_id in seen_ids:
+            errors.append(f"{case_location}.case_id: duplicate case ID {case_id}")
+        else:
+            seen_ids.add(case_id)
+
+        if case.get("profile_id") not in COMPLETION_PROFILE_IDS:
+            errors.append(f"{case_location}.profile_id: unsupported profile")
+        if case.get("required_source_state") not in COMPLETION_SOURCE_STATES:
+            errors.append(f"{case_location}.required_source_state: invalid state")
+        if case.get("artifact_status") not in {"persisted", "failed", "not_attempted"}:
+            errors.append(f"{case_location}.artifact_status: invalid state")
+        if case.get("claimed_status") not in COMPLETION_STATUSES:
+            errors.append(f"{case_location}.claimed_status: invalid status")
+        if case.get("expected_status") not in COMPLETION_STATUSES:
+            errors.append(f"{case_location}.expected_status: invalid status")
+
+        for key in ("denominator_known", "expect_valid", "reliable_product", "reviews_complete"):
+            if not isinstance(case.get(key), bool):
+                errors.append(f"{case_location}.{key}: expected a boolean")
+
+        for key in integer_fields:
+            if not is_non_negative_int(case.get(key)):
+                errors.append(f"{case_location}.{key}: expected a non-negative integer")
+
+        expected = case.get("expected")
+        observed = case.get("observed")
+        gap_count = case.get("gap_count")
+        percent = case.get("percent")
+        refreshed = case.get("refreshed_this_cycle")
+        retained = case.get("current_retained")
+
+        if is_non_negative_int(expected) and is_non_negative_int(observed):
+            if observed > expected:
+                errors.append(f"{case_location}: observed exceeds expected")
+            calculated = 0.0 if expected == 0 else observed / expected * 100
+            if (
+                not isinstance(percent, (int, float))
+                or isinstance(percent, bool)
+                or abs(float(percent) - calculated) > 0.01
+            ):
+                errors.append(f"{case_location}: percent does not match counts")
+            if is_non_negative_int(gap_count) and gap_count != expected - observed:
+                errors.append(f"{case_location}: gap_count does not match counts")
+
+        if (
+            is_non_negative_int(observed)
+            and is_non_negative_int(refreshed)
+            and is_non_negative_int(retained)
+            and observed != refreshed + retained
+        ):
+            errors.append(
+                f"{case_location}: observed must equal refreshed_this_cycle plus "
+                "current_retained after deduplication"
+            )
+
+        derived = derive_completion_status(case)
+        if case.get("expected_status") != derived:
+            errors.append(
+                f"{case_location}: expected_status {case.get('expected_status')!r} "
+                f"does not match derived status {derived!r}"
+            )
+
+        claim_mismatch = case.get("claimed_status") != derived
+        if case.get("expect_valid") is True and claim_mismatch:
+            errors.append(f"{case_location}: valid case contradicts its derived status")
+        if case.get("expect_valid") is False:
+            if not claim_mismatch:
+                errors.append(f"{case_location}: negative case must contradict its derived status")
+            if case.get("expected_error") != "CLAIMED_STATUS_MISMATCH":
+                errors.append(
+                    f"{case_location}.expected_error: expected CLAIMED_STATUS_MISMATCH"
+                )
+
+
 def validate_examples(parsed: dict[Path, object], errors: list[str]) -> None:
     report_path = Path("examples/synthetic/report-manifest.json")
     idea_path = Path("examples/synthetic/investment-idea.json")
     decision_path = Path("examples/synthetic/decision-record.json")
+    completion_path = Path("examples/synthetic/universe-completion-cases.json")
 
     report = parsed.get(report_path)
     idea = parsed.get(idea_path)
     decision = parsed.get(decision_path)
+    completion = parsed.get(completion_path)
 
     require_keys(
         report,
@@ -284,8 +504,15 @@ def validate_examples(parsed: dict[Path, object], errors: list[str]) -> None:
                 if not isinstance(percent, (int, float)) or abs(percent - calculated) > 0.01:
                     errors.append(f"{report_path}: coverage percent does not match counts")
 
-            if report.get("status") == "complete":
-                if expected != observed or coverage.get("gaps"):
+        if report.get("status") == "complete":
+                if (
+                    expected != observed
+                    or not isinstance(expected, int)
+                    or isinstance(expected, bool)
+                    or expected <= 0
+                    or percent != 100
+                    or coverage.get("gaps")
+                ):
                     errors.append(f"{report_path}: complete status requires full coverage")
 
         freshness = report.get("freshness")
@@ -307,6 +534,8 @@ def validate_examples(parsed: dict[Path, object], errors: list[str]) -> None:
     if isinstance(idea, dict) and isinstance(decision, dict):
         if decision.get("idea_id") != idea.get("idea_id"):
             errors.append(f"{decision_path}: idea link does not match synthetic idea")
+
+    validate_universe_completion_cases(completion, errors)
 
 
 def main() -> int:

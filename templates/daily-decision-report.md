@@ -12,6 +12,9 @@
 | Generated at (UTC) | `<YYYY-MM-DDTHH:MM:SSZ>` |
 | Data as of (UTC) | `<YYYY-MM-DDTHH:MM:SSZ>` |
 | Status | `<complete | provisional | degraded | failed>` |
+| Universe gate profile | `<broad_equity_daily | curated_etf_daily | declared_bounded_set>` |
+| Membership as of (UTC) | `<YYYY-MM-DDTHH:MM:SSZ>` |
+| Required period | `<latest required market or source period>` |
 | Expected / observed coverage | `<expected> / <observed>` |
 | Freshness | `<fresh | stale | unknown>` |
 | Durable persistence | `<persisted | failed | not_attempted>` |
@@ -79,6 +82,11 @@ constraints, and performance remain private.
 
 List coverage gaps, stale inputs, unavailable sources, and every material
 fallback. The narrative and top-level status must agree with this section.
+
+State the deterministic universe-gate result separately from minimum runtime
+readiness. A page load, completed job, non-empty result, or usable subset does
+not establish full universe completion. Apply
+[`docs/universe-completion-gates.md`](../docs/universe-completion-gates.md).
 
 ## Persistence outcome
 
