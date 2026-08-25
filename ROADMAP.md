@@ -14,7 +14,7 @@ contract and make a safe, validated change without relying on chat history.
 
 ## Phase 1 — Specification inventory
 
-- [ ] Convert remaining chat-born operating decisions into focused issues or
+- [x] Convert remaining chat-born operating decisions into focused issues or
       architecture decisions.
 - [x] Reconcile field names with the private MarinoTerminal implementation.
 - [x] Define explicit completion thresholds for each supported universe.
