@@ -3,25 +3,11 @@
 from __future__ import annotations
 
 import copy
-import json
 import unittest
-from pathlib import Path
 
-from jsonschema import Draft202012Validator, FormatChecker
+from jsonschema import Draft202012Validator
 
-
-ROOT = Path(__file__).resolve().parents[1]
-FORMAT_CHECKER = FormatChecker()
-
-
-def load_json(path: str) -> object:
-    return json.loads((ROOT / path).read_text(encoding="utf-8"))
-
-
-def validator_for(path: str) -> Draft202012Validator:
-    schema = load_json(path)
-    Draft202012Validator.check_schema(schema)
-    return Draft202012Validator(schema, format_checker=FORMAT_CHECKER)
+from schema_helpers import load_json, validator_for
 
 
 class SchemaValidationTests(unittest.TestCase):

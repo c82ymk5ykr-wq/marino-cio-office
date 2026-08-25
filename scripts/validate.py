@@ -41,11 +41,13 @@ REQUIRED_FILES = {
     "docs/decisions/0002-canonical-contract-vocabulary.md",
     "docs/decisions/0003-deterministic-universe-completion-gates.md",
     "docs/decisions/0004-verifiable-idea-lineage.md",
+    "docs/decisions/0005-v1-schema-compatibility-gate.md",
     "docs/decisions/README.md",
     "docs/contract-vocabulary.md",
     "docs/idea-lineage-metrics.md",
     "docs/operating-model.md",
     "docs/public-private-boundary.md",
+    "docs/schema-compatibility-policy.md",
     "docs/specification-inventory.md",
     "docs/universe-completion-gates.md",
     "examples/synthetic/decision-record.json",
@@ -66,6 +68,9 @@ REQUIRED_FILES = {
     "templates/architecture-decision.md",
     "templates/daily-decision-report.md",
     "templates/decision-record.md",
+    "tests/compatibility/v1-fixtures.json",
+    "tests/schema_helpers.py",
+    "tests/test_schema_compatibility.py",
     "tests/test_schema_validation.py",
 }
 

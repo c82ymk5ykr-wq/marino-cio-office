@@ -42,8 +42,9 @@ synthetic.
 - Apply `docs/idea-lineage-metrics.md`: routine refreshes do not make an idea
   new, and missing lineage is unverified rather than reconstructed.
 - Separate research disposition from deployment timing, sizing, and action.
-- Keep `schemas/v1/` backward compatible. Breaking changes require a new schema
-  version directory and an Architecture Decision Record (ADR).
+- Apply `docs/schema-compatibility-policy.md` and keep `schemas/v1/` backward
+  compatible. Breaking changes require a new schema version directory and an
+  Architecture Decision Record (ADR).
 - Update affected schemas, templates, synthetic examples, and documentation in
   the same change.
 

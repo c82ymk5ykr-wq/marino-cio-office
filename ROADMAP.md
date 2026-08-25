@@ -26,7 +26,7 @@ contract, and public terminology does not drift from the private implementation.
 ## Phase 2 — Quality gates
 
 - [x] Add fuller JSON Schema example validation.
-- [ ] Add compatibility tests for schema changes.
+- [x] Add compatibility tests for schema changes.
 - [ ] Define report acceptance checks for freshness, coverage, failed sources,
       and durable persistence.
 

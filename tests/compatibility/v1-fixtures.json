@@ -1,0 +1,342 @@
+{
+  "fixture_set_version": "1.0.0",
+  "contracts": {
+    "report-manifest": {
+      "schema_path": "schemas/v1/report-manifest.schema.json",
+      "published_versions": [
+        "1.0.0"
+      ],
+      "fixtures": [
+        {
+          "fixture_id": "report-manifest-1.0.0-provisional",
+          "schema_version": "1.0.0",
+          "instance": {
+            "schema_version": "1.0.0",
+            "report_id": "SYNTH-COMPAT-REPORT-PROVISIONAL",
+            "report_type": "daily_decision_report",
+            "generated_at": "2026-01-15T14:05:00Z",
+            "data_as_of": "2026-01-15T14:00:00Z",
+            "status": "provisional",
+            "status_reason": "Fictional compatibility fixture with incomplete coverage.",
+            "coverage": {
+              "universe": "two fictional candidates",
+              "expected": 2,
+              "observed": 1,
+              "percent": 50.0,
+              "gaps": [
+                "One fictional candidate is absent."
+              ]
+            },
+            "freshness": {
+              "status": "stale",
+              "oldest_material_source_as_of": "2026-01-14T12:00:00Z",
+              "threshold_hours": 24
+            },
+            "sources": [
+              {
+                "source_id": "SYNTH-COMPAT-SOURCE",
+                "category": "market",
+                "provenance": "INLINE",
+                "data_as_of": "2026-01-14T12:00:00Z",
+                "retrieved_at": "2026-01-15T14:01:00Z",
+                "status": "stale",
+                "note": "Fictional compatibility source only."
+              }
+            ],
+            "quality_flags": [
+              "SYNTHETIC_COMPATIBILITY_GAP"
+            ],
+            "idea_ids": [],
+            "decision_ids": [],
+            "artifact": {
+              "status": "not_attempted",
+              "note": "No artifact exists for this fictional fixture."
+            }
+          }
+        },
+        {
+          "fixture_id": "report-manifest-1.0.0-complete",
+          "schema_version": "1.0.0",
+          "instance": {
+            "schema_version": "1.0.0",
+            "report_id": "SYNTH-COMPAT-REPORT-COMPLETE",
+            "report_type": "system_quality_report",
+            "generated_at": "2026-01-15T14:05:00Z",
+            "data_as_of": "2026-01-15T14:00:00Z",
+            "status": "complete",
+            "status_reason": "All fictional v1.0 compatibility gates pass.",
+            "coverage": {
+              "universe": "one fictional candidate",
+              "expected": 1,
+              "observed": 1,
+              "percent": 100.0,
+              "gaps": []
+            },
+            "freshness": {
+              "status": "fresh",
+              "oldest_material_source_as_of": "2026-01-15T14:00:00Z",
+              "threshold_hours": 24
+            },
+            "sources": [
+              {
+                "source_id": "SYNTH-COMPAT-SOURCE",
+                "category": "market",
+                "provenance": "INLINE",
+                "data_as_of": "2026-01-15T14:00:00Z",
+                "retrieved_at": "2026-01-15T14:01:00Z",
+                "status": "available",
+                "note": "Fictional compatibility source only."
+              }
+            ],
+            "quality_flags": [],
+            "idea_ids": [],
+            "decision_ids": [],
+            "artifact": {
+              "status": "persisted",
+              "durable_reference": "SYNTH-COMPAT-ARCHIVE-001",
+              "note": "Opaque fictional compatibility reference only."
+            }
+          }
+        }
+      ]
+    },
+    "investment-idea": {
+      "schema_path": "schemas/v1/investment-idea.schema.json",
+      "published_versions": [
+        "1.0.0",
+        "1.1.0"
+      ],
+      "fixtures": [
+        {
+          "fixture_id": "investment-idea-1.0.0",
+          "schema_version": "1.0.0",
+          "instance": {
+            "schema_version": "1.0.0",
+            "idea_id": "SYNTH-COMPAT-IDEA-100",
+            "first_seen_at": "2026-01-15T14:00:00Z",
+            "last_seen_at": "2026-01-15T14:00:00Z",
+            "board": "FRESH_IDEA_DISCOVERY",
+            "research_state": "candidate",
+            "asset": {
+              "symbol": "SYNTH-C100",
+              "name": "Fictional Compatibility Asset",
+              "asset_type": "equity"
+            },
+            "thesis": "Fictional legacy thesis.",
+            "regime_fit": "Fictional legacy regime fit.",
+            "catalysts": [
+              "Fictional catalyst."
+            ],
+            "risks": [
+              "Fictional risk."
+            ],
+            "invalidation_conditions": [
+              "Fictional invalidation."
+            ],
+            "time_horizon": "Fictional horizon.",
+            "timing_notes": "No deployment implication.",
+            "confidence": "low",
+            "evidence": [
+              {
+                "source_id": "SYNTH-COMPAT-SOURCE",
+                "provenance": "INLINE",
+                "claim": "Fictional compatibility evidence."
+              }
+            ]
+          }
+        },
+        {
+          "fixture_id": "investment-idea-1.1.0-new",
+          "schema_version": "1.1.0",
+          "instance": {
+            "schema_version": "1.1.0",
+            "idea_id": "SYNTH-COMPAT-IDEA-NEW",
+            "first_seen_at": "2026-01-15T14:00:00Z",
+            "last_seen_at": "2026-01-15T14:00:00Z",
+            "lineage": {
+              "status": "verified",
+              "classification": "new",
+              "last_material_change_at": "2026-01-15T14:00:00Z",
+              "repeat_count": 0,
+              "changed_dimensions": []
+            },
+            "board": "FRESH_IDEA_DISCOVERY",
+            "research_state": "candidate",
+            "asset": {
+              "symbol": "SYNTH-CNEW",
+              "name": "Fictional New Compatibility Asset",
+              "asset_type": "equity"
+            },
+            "thesis": "Fictional new thesis.",
+            "regime_fit": "Fictional regime fit.",
+            "catalysts": ["Fictional catalyst."],
+            "risks": ["Fictional risk."],
+            "invalidation_conditions": ["Fictional invalidation."],
+            "time_horizon": "Fictional horizon.",
+            "timing_notes": "No deployment implication.",
+            "confidence": "low",
+            "evidence": [{"source_id": "SYNTH-COMPAT-SOURCE", "provenance": "INLINE", "claim": "Fictional evidence."}]
+          }
+        },
+        {
+          "fixture_id": "investment-idea-1.1.0-repeat-unchanged",
+          "schema_version": "1.1.0",
+          "instance": {
+            "schema_version": "1.1.0",
+            "idea_id": "SYNTH-COMPAT-IDEA-REPEAT",
+            "first_seen_at": "2026-01-10T14:00:00Z",
+            "last_seen_at": "2026-01-15T14:00:00Z",
+            "lineage": {"status": "verified", "classification": "repeat_unchanged", "last_material_change_at": "2026-01-10T14:00:00Z", "repeat_count": 1, "changed_dimensions": []},
+            "board": "CORE_CONVICTION_MONITOR",
+            "research_state": "monitor",
+            "asset": {"symbol": "SYNTH-CREP", "name": "Fictional Repeat Compatibility Asset", "asset_type": "etf"},
+            "thesis": "Fictional repeated thesis.",
+            "regime_fit": "Fictional regime fit.",
+            "catalysts": ["Fictional catalyst."],
+            "risks": ["Fictional risk."],
+            "invalidation_conditions": ["Fictional invalidation."],
+            "time_horizon": "Fictional horizon.",
+            "timing_notes": "No deployment implication.",
+            "confidence": "medium",
+            "evidence": [{"source_id": "SYNTH-COMPAT-SOURCE", "provenance": "PASTED", "claim": "Fictional evidence."}],
+            "repeat_reason": "Fictional retained review remains useful."
+          }
+        },
+        {
+          "fixture_id": "investment-idea-1.1.0-materially-updated",
+          "schema_version": "1.1.0",
+          "instance": {
+            "schema_version": "1.1.0",
+            "idea_id": "SYNTH-COMPAT-IDEA-UPDATE",
+            "first_seen_at": "2026-01-10T14:00:00Z",
+            "last_seen_at": "2026-01-15T14:00:00Z",
+            "lineage": {"status": "verified", "classification": "materially_updated", "last_material_change_at": "2026-01-15T14:00:00Z", "repeat_count": 1, "changed_dimensions": ["thesis"]},
+            "board": "FRESH_IDEA_DISCOVERY",
+            "research_state": "advance",
+            "asset": {"symbol": "SYNTH-CUPD", "name": "Fictional Updated Compatibility Asset", "asset_type": "closed_end_fund"},
+            "thesis": "Fictional updated thesis.",
+            "regime_fit": "Fictional regime fit.",
+            "catalysts": ["Fictional catalyst."],
+            "risks": ["Fictional risk."],
+            "invalidation_conditions": ["Fictional invalidation."],
+            "time_horizon": "Fictional horizon.",
+            "timing_notes": "No deployment implication.",
+            "confidence": "high",
+            "evidence": [{"source_id": "SYNTH-COMPAT-SOURCE", "provenance": "CIO_LEVEL_INFERENCE", "claim": "Fictional evidence."}],
+            "repeat_reason": "Fictional thesis changed materially."
+          }
+        },
+        {
+          "fixture_id": "investment-idea-1.1.0-reintroduced",
+          "schema_version": "1.1.0",
+          "instance": {
+            "schema_version": "1.1.0",
+            "idea_id": "SYNTH-COMPAT-IDEA-REINTRODUCED",
+            "first_seen_at": "2026-01-01T14:00:00Z",
+            "last_seen_at": "2026-01-15T14:00:00Z",
+            "lineage": {"status": "verified", "classification": "reintroduced", "last_material_change_at": "2026-01-15T14:00:00Z", "repeat_count": 1, "changed_dimensions": ["research_state"]},
+            "board": "FRESH_IDEA_DISCOVERY",
+            "research_state": "candidate",
+            "asset": {"symbol": "SYNTH-CRIN", "name": "Fictional Reintroduced Compatibility Asset", "asset_type": "fixed_income"},
+            "thesis": "Fictional reintroduced thesis.",
+            "regime_fit": "Fictional regime fit.",
+            "catalysts": ["Fictional catalyst."],
+            "risks": ["Fictional risk."],
+            "invalidation_conditions": ["Fictional invalidation."],
+            "time_horizon": "Fictional horizon.",
+            "timing_notes": "No deployment implication.",
+            "confidence": "low",
+            "evidence": [{"source_id": "SYNTH-COMPAT-SOURCE", "provenance": "INLINE", "claim": "Fictional evidence."}],
+            "repeat_reason": "Fictional research state changed."
+          }
+        },
+        {
+          "fixture_id": "investment-idea-1.1.0-stale-repeat",
+          "schema_version": "1.1.0",
+          "instance": {
+            "schema_version": "1.1.0",
+            "idea_id": "SYNTH-COMPAT-IDEA-STALE",
+            "first_seen_at": "2026-01-01T14:00:00Z",
+            "last_seen_at": "2026-01-15T14:00:00Z",
+            "lineage": {"status": "verified", "classification": "stale_repeat", "last_material_change_at": "2026-01-05T14:00:00Z", "repeat_count": 1, "changed_dimensions": []},
+            "board": "CORE_CONVICTION_MONITOR",
+            "research_state": "hold",
+            "asset": {"symbol": "SYNTH-CSTL", "name": "Fictional Stale Compatibility Asset", "asset_type": "commodity"},
+            "thesis": "Fictional stale thesis.",
+            "regime_fit": "Fictional regime fit.",
+            "catalysts": ["Fictional catalyst."],
+            "risks": ["Fictional risk."],
+            "invalidation_conditions": ["Fictional invalidation."],
+            "time_horizon": "Fictional horizon.",
+            "timing_notes": "No deployment implication.",
+            "confidence": "low",
+            "evidence": [{"source_id": "SYNTH-COMPAT-SOURCE", "provenance": "INLINE", "claim": "Fictional stale evidence."}],
+            "repeat_reason": "Fictional stale evidence remains disclosed."
+          }
+        },
+        {
+          "fixture_id": "investment-idea-1.1.0-unverified",
+          "schema_version": "1.1.0",
+          "instance": {
+            "schema_version": "1.1.0",
+            "idea_id": "SYNTH-COMPAT-IDEA-UNVERIFIED",
+            "first_seen_at": "2026-01-15T13:59:00Z",
+            "last_seen_at": "2026-01-15T14:00:00Z",
+            "lineage": {"status": "unverified", "classification": "unverified", "changed_dimensions": [], "verification_note": "Fictional retained history is unavailable."},
+            "board": "REJECTED_IDEA_BOARD",
+            "research_state": "archive",
+            "asset": {"symbol": "SYNTH-CUNV", "name": "Fictional Unverified Compatibility Asset", "asset_type": "other"},
+            "thesis": "Fictional unverified thesis.",
+            "regime_fit": "Fictional regime fit.",
+            "catalysts": ["Fictional catalyst."],
+            "risks": ["Fictional risk."],
+            "invalidation_conditions": ["Fictional invalidation."],
+            "time_horizon": "Fictional horizon.",
+            "timing_notes": "No deployment implication.",
+            "confidence": "low",
+            "evidence": [{"source_id": "SYNTH-COMPAT-SOURCE", "provenance": "INLINE", "claim": "Fictional evidence."}]
+          }
+        }
+      ]
+    },
+    "decision-record": {
+      "schema_path": "schemas/v1/decision-record.schema.json",
+      "published_versions": [
+        "1.0.0"
+      ],
+      "fixtures": [
+        {
+          "fixture_id": "decision-record-1.0.0",
+          "schema_version": "1.0.0",
+          "instance": {
+            "schema_version": "1.0.0",
+            "decision_id": "SYNTH-COMPAT-DECISION-100",
+            "idea_id": "SYNTH-COMPAT-IDEA-100",
+            "recorded_at": "2026-01-15T14:05:00Z",
+            "research_disposition": "monitor",
+            "deployment": {
+              "readiness": "not_ready",
+              "action": "no_action",
+              "timing_and_confirmation": "Fictional confirmation only.",
+              "size_band": "Synthetic policy band only.",
+              "scaling_plan": "Synthetic scaling policy only."
+            },
+            "rationale": "Fictional compatibility rationale.",
+            "historian_note": "Fictional compatibility history.",
+            "skeptic_countercase": "Fictional compatibility countercase.",
+            "alternatives_considered": [
+              "Fictional alternative."
+            ],
+            "invalidation_conditions": [
+              "Fictional invalidation."
+            ],
+            "review_by": "2026-02-15T14:05:00Z",
+            "evidence_ids": [
+              "SYNTH-COMPAT-SOURCE"
+            ]
+          }
+        }
+      ]
+    }
+  }
+}
