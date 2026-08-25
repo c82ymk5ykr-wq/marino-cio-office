@@ -35,10 +35,16 @@ testable gates.
 
 ## Phase 3 — Private integration
 
-- [ ] Map public contracts to private production adapters without exposing
+- [x] Map public contracts to private production adapters without exposing
       proprietary logic or data.
-- [ ] Add contract-version reporting to the private dashboard and artifacts.
-- [ ] Verify that degraded sources still yield an honest, usable report.
+- [x] Add contract-version reporting to the private dashboard and artifacts.
+- [x] Verify that degraded sources still yield an honest, usable report.
+
+Completion evidence:
+[ADR 0007](docs/decisions/0007-private-contract-adoption-attestation.md)
+records the provider-neutral adoption and verification attestation. Private
+mappings, runtime evidence, and production artifacts remain outside this
+repository.
 
 Exit condition: private systems consume a named public contract version and
 surface contract failures clearly.
