@@ -1,0 +1,44 @@
+{
+  "schema_version": "1.0.0",
+  "review_id": "synthetic-review-004",
+  "decision_id": "synthetic-decision-001",
+  "idea_id": "synthetic-idea-001",
+  "reviewed_at": "2026-02-18T15:00:00Z",
+  "evaluation_window": {
+    "started_at": "2026-01-15T14:06:00Z",
+    "ended_at": "2026-02-15T14:05:00Z"
+  },
+  "evidence_cutoff_at": "2026-02-17T15:00:00Z",
+  "assessability": "assessable",
+  "ex_ante_basis": "verified",
+  "evidence_quality": "sufficient",
+  "research_outcome": "adverse",
+  "decision_quality": "mixed_support",
+  "process_quality": "undisciplined",
+  "timing_discipline": "partially_followed",
+  "invalidation": {
+    "trigger_state": "triggered",
+    "response_state": "delayed",
+    "evidence_ids": [
+      "synthetic-outcome-evidence-004"
+    ],
+    "note": "The fictional trigger was recognized after the invented response window had elapsed."
+  },
+  "attribution": [
+    {
+      "factor_id": "synthetic-factor-004",
+      "category": "process",
+      "direction": "detracting",
+      "confidence": "medium",
+      "evidence_ids": [
+        "synthetic-outcome-evidence-004"
+      ],
+      "note": "The invented evidence is associated with a delayed process response and does not measure a return contribution."
+    }
+  ],
+  "evidence_ids": [
+    "synthetic-outcome-evidence-004"
+  ],
+  "assessment_note": "The fictional trigger response was delayed, so timing and process discipline are not inferred from the adverse outcome.",
+  "limitations": []
+}

@@ -55,5 +55,9 @@ surface contract failures clearly.
 - [ ] Measure idea novelty, repeat quality, timing discipline, and invalidations.
 - [ ] Feed approved lessons into Chief Historian review and future decisions.
 
+Public contract evidence: [ADR 0008](docs/decisions/0008-append-only-outcome-review.md)
+defines `outcome-review 1.0.0`. The first outcome remains open until private
+producer and consumer conformance is verified categorically.
+
 Exit condition: lessons become versioned operating improvements without moving
 private decisions or performance history into this repository.

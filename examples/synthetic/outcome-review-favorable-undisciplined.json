@@ -1,0 +1,42 @@
+{
+  "schema_version": "1.0.0",
+  "review_id": "synthetic-review-002",
+  "decision_id": "synthetic-decision-001",
+  "idea_id": "synthetic-idea-001",
+  "reviewed_at": "2026-02-17T15:00:00Z",
+  "evaluation_window": {
+    "started_at": "2026-01-15T14:06:00Z",
+    "ended_at": "2026-02-15T14:05:00Z"
+  },
+  "evidence_cutoff_at": "2026-02-16T15:00:00Z",
+  "assessability": "assessable",
+  "ex_ante_basis": "verified",
+  "evidence_quality": "sufficient",
+  "research_outcome": "favorable",
+  "decision_quality": "weakly_supported",
+  "process_quality": "undisciplined",
+  "timing_discipline": "not_followed",
+  "invalidation": {
+    "trigger_state": "not_triggered",
+    "response_state": "not_required",
+    "evidence_ids": [],
+    "note": "No fictional invalidation trigger occurred."
+  },
+  "attribution": [
+    {
+      "factor_id": "synthetic-factor-002",
+      "category": "catalyst",
+      "direction": "supporting",
+      "confidence": "low",
+      "evidence_ids": [
+        "synthetic-outcome-evidence-002"
+      ],
+      "note": "An invented catalyst was associated with the favorable research outcome, but the process remained undisciplined."
+    }
+  ],
+  "evidence_ids": [
+    "synthetic-outcome-evidence-002"
+  ],
+  "assessment_note": "The favorable fictional outcome does not cure the weak ex-ante support or failure to follow timing prerequisites.",
+  "limitations": []
+}

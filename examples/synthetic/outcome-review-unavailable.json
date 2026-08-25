@@ -1,0 +1,26 @@
+{
+  "schema_version": "1.0.0",
+  "review_id": "synthetic-review-006",
+  "decision_id": "synthetic-decision-001",
+  "idea_id": "synthetic-idea-001",
+  "reviewed_at": "2026-02-20T14:00:00Z",
+  "assessability": "unavailable",
+  "ex_ante_basis": "verified",
+  "evidence_quality": "unavailable",
+  "research_outcome": "indeterminate",
+  "decision_quality": "unassessable",
+  "process_quality": "unassessable",
+  "timing_discipline": "not_applicable",
+  "invalidation": {
+    "trigger_state": "not_applicable",
+    "response_state": "not_applicable",
+    "evidence_ids": [],
+    "note": "No fictional outcome evidence was available for invalidation review."
+  },
+  "attribution": [],
+  "evidence_ids": [],
+  "assessment_note": "The fictional review attempt is recorded as unavailable rather than reconstructed.",
+  "limitations": [
+    "No fictional outcome evidence was retained for the declared review."
+  ]
+}

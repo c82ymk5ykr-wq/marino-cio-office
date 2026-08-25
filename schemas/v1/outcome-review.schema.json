@@ -1,0 +1,752 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://raw.githubusercontent.com/c82ymk5ykr-wq/marino-cio-office/main/schemas/v1/outcome-review.schema.json",
+  "title": "Marino CIO Office outcome review",
+  "description": "Public contract for an append-only, qualitative review of a private decision outcome. Real populated reviews remain private and contain no investment-performance or account data.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "review_id",
+    "decision_id",
+    "idea_id",
+    "reviewed_at",
+    "assessability",
+    "ex_ante_basis",
+    "evidence_quality",
+    "research_outcome",
+    "decision_quality",
+    "process_quality",
+    "timing_discipline",
+    "invalidation",
+    "attribution",
+    "evidence_ids",
+    "assessment_note",
+    "limitations"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "1.0.0"
+    },
+    "review_id": {
+      "$ref": "#/$defs/opaque_id",
+      "description": "Stable opaque identifier for this review. It must not encode a symbol, date, outcome, or performance value."
+    },
+    "supersedes_review_id": {
+      "$ref": "#/$defs/opaque_id",
+      "description": "Optional opaque link used when this append-only artifact corrects a prior review."
+    },
+    "decision_id": {
+      "$ref": "#/$defs/linked_id",
+      "description": "Opaque link to the immutable ex-ante decision record."
+    },
+    "idea_id": {
+      "$ref": "#/$defs/linked_id",
+      "description": "Opaque link to the stable idea lineage."
+    },
+    "reviewed_at": {
+      "$ref": "#/$defs/utc_timestamp",
+      "description": "When this outcome review was finalized."
+    },
+    "evaluation_window": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "started_at",
+        "ended_at"
+      ],
+      "properties": {
+        "started_at": {
+          "$ref": "#/$defs/utc_timestamp"
+        },
+        "ended_at": {
+          "$ref": "#/$defs/utc_timestamp"
+        }
+      }
+    },
+    "evidence_cutoff_at": {
+      "$ref": "#/$defs/utc_timestamp",
+      "description": "Latest evidence time admitted to this review."
+    },
+    "assessability": {
+      "type": "string",
+      "enum": [
+        "assessable",
+        "partial",
+        "unavailable"
+      ],
+      "description": "Whether retained evidence supports a full, partial, or unavailable review."
+    },
+    "ex_ante_basis": {
+      "type": "string",
+      "enum": [
+        "verified",
+        "partial",
+        "unverified"
+      ],
+      "description": "Quality of the retained pre-outcome decision basis; missing history is never reconstructed."
+    },
+    "evidence_quality": {
+      "type": "string",
+      "enum": [
+        "sufficient",
+        "limited",
+        "conflicting",
+        "unavailable",
+        "unverified"
+      ]
+    },
+    "research_outcome": {
+      "type": "string",
+      "enum": [
+        "favorable",
+        "mixed",
+        "adverse",
+        "indeterminate",
+        "not_applicable"
+      ],
+      "description": "Qualitative research-case outcome only; never a return or performance label."
+    },
+    "decision_quality": {
+      "type": "string",
+      "enum": [
+        "well_supported",
+        "mixed_support",
+        "weakly_supported",
+        "unassessable"
+      ],
+      "description": "Quality of the ex-ante decision given evidence available at decision time."
+    },
+    "process_quality": {
+      "type": "string",
+      "enum": [
+        "disciplined",
+        "mixed",
+        "undisciplined",
+        "unassessable"
+      ],
+      "description": "Adherence to the declared decision process, assessed independently of outcome."
+    },
+    "timing_discipline": {
+      "type": "string",
+      "enum": [
+        "followed",
+        "partially_followed",
+        "not_followed",
+        "unassessable",
+        "not_applicable"
+      ],
+      "description": "Adherence to declared timing and confirmation prerequisites; it does not serialize an action or execution."
+    },
+    "invalidation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "trigger_state",
+        "response_state",
+        "evidence_ids",
+        "note"
+      ],
+      "properties": {
+        "trigger_state": {
+          "type": "string",
+          "enum": [
+            "not_triggered",
+            "triggered",
+            "ambiguous",
+            "unknown",
+            "not_applicable"
+          ]
+        },
+        "response_state": {
+          "type": "string",
+          "enum": [
+            "not_required",
+            "followed",
+            "delayed",
+            "not_followed",
+            "unknown",
+            "not_applicable"
+          ]
+        },
+        "evidence_ids": {
+          "$ref": "#/$defs/evidence_ids"
+        },
+        "note": {
+          "$ref": "#/$defs/non_blank_text"
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "trigger_state": {
+                "const": "not_triggered"
+              }
+            },
+            "required": [
+              "trigger_state"
+            ]
+          },
+          "then": {
+            "properties": {
+              "response_state": {
+                "const": "not_required"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "trigger_state": {
+                "const": "triggered"
+              }
+            },
+            "required": [
+              "trigger_state"
+            ]
+          },
+          "then": {
+            "properties": {
+              "response_state": {
+                "enum": [
+                  "followed",
+                  "delayed",
+                  "not_followed",
+                  "unknown"
+                ]
+              },
+              "evidence_ids": {
+                "minItems": 1
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "trigger_state": {
+                "enum": [
+                  "ambiguous",
+                  "unknown"
+                ]
+              }
+            },
+            "required": [
+              "trigger_state"
+            ]
+          },
+          "then": {
+            "properties": {
+              "response_state": {
+                "const": "unknown"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "trigger_state": {
+                "const": "not_applicable"
+              }
+            },
+            "required": [
+              "trigger_state"
+            ]
+          },
+          "then": {
+            "properties": {
+              "response_state": {
+                "const": "not_applicable"
+              }
+            }
+          }
+        }
+      ]
+    },
+    "attribution": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "factor_id",
+          "category",
+          "direction",
+          "confidence",
+          "evidence_ids",
+          "note"
+        ],
+        "properties": {
+          "factor_id": {
+            "$ref": "#/$defs/opaque_id"
+          },
+          "category": {
+            "type": "string",
+            "enum": [
+              "thesis",
+              "evidence",
+              "catalyst",
+              "regime",
+              "timing",
+              "risk",
+              "invalidation",
+              "process",
+              "other"
+            ]
+          },
+          "direction": {
+            "type": "string",
+            "enum": [
+              "supporting",
+              "detracting",
+              "mixed",
+              "neutral",
+              "unknown"
+            ],
+            "description": "Observed association only; it does not claim causal proof or numeric contribution."
+          },
+          "confidence": {
+            "type": "string",
+            "enum": [
+              "low",
+              "medium",
+              "high"
+            ]
+          },
+          "evidence_ids": {
+            "allOf": [
+              {
+                "$ref": "#/$defs/evidence_ids"
+              },
+              {
+                "minItems": 1
+              }
+            ]
+          },
+          "note": {
+            "$ref": "#/$defs/non_blank_text"
+          }
+        }
+      },
+      "uniqueItems": true
+    },
+    "evidence_ids": {
+      "$ref": "#/$defs/evidence_ids",
+      "description": "Opaque references to evidence admitted to the review."
+    },
+    "assessment_note": {
+      "$ref": "#/$defs/non_blank_text",
+      "description": "Qualitative explanation of the separate assessment axes."
+    },
+    "limitations": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/non_blank_text"
+      },
+      "uniqueItems": true
+    }
+  },
+  "$defs": {
+    "opaque_id": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,159}(?![\\s\\S])"
+    },
+    "linked_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "utc_timestamp": {
+      "type": "string",
+      "format": "date-time",
+      "pattern": "Z(?![\\s\\S])"
+    },
+    "non_blank_text": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "\\S"
+    },
+    "evidence_ids": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/linked_id"
+      },
+      "uniqueItems": true
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "assessability": {
+            "const": "assessable"
+          }
+        },
+        "required": [
+          "assessability"
+        ]
+      },
+      "then": {
+        "required": [
+          "evaluation_window",
+          "evidence_cutoff_at"
+        ],
+        "properties": {
+          "ex_ante_basis": {
+            "const": "verified"
+          },
+          "evidence_quality": {
+            "const": "sufficient"
+          },
+          "decision_quality": {
+            "not": {
+              "const": "unassessable"
+            }
+          },
+          "process_quality": {
+            "not": {
+              "const": "unassessable"
+            }
+          },
+          "timing_discipline": {
+            "not": {
+              "const": "unassessable"
+            }
+          },
+          "invalidation": {
+            "properties": {
+              "trigger_state": {
+                "not": {
+                  "enum": [
+                    "ambiguous",
+                    "unknown"
+                  ]
+                }
+              },
+              "response_state": {
+                "not": {
+                  "const": "unknown"
+                }
+              }
+            }
+          },
+          "attribution": {
+            "minItems": 1
+          },
+          "evidence_ids": {
+            "minItems": 1
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "assessability": {
+            "const": "partial"
+          }
+        },
+        "required": [
+          "assessability"
+        ]
+      },
+      "then": {
+        "properties": {
+          "limitations": {
+            "minItems": 1
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "assessability": {
+            "const": "unavailable"
+          }
+        },
+        "required": [
+          "assessability"
+        ]
+      },
+      "then": {
+        "properties": {
+          "evidence_quality": {
+            "enum": [
+              "unavailable",
+              "unverified"
+            ]
+          },
+          "research_outcome": {
+            "enum": [
+              "indeterminate",
+              "not_applicable"
+            ]
+          },
+          "decision_quality": {
+            "const": "unassessable"
+          },
+          "process_quality": {
+            "const": "unassessable"
+          },
+          "timing_discipline": {
+            "enum": [
+              "unassessable",
+              "not_applicable"
+            ]
+          },
+          "attribution": {
+            "maxItems": 0
+          },
+          "evidence_ids": {
+            "maxItems": 0
+          },
+          "limitations": {
+            "minItems": 1
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "evidence_quality": {
+            "enum": [
+              "limited",
+              "conflicting",
+              "unavailable",
+              "unverified"
+            ]
+          }
+        },
+        "required": [
+          "evidence_quality"
+        ]
+      },
+      "then": {
+        "properties": {
+          "limitations": {
+            "minItems": 1
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "evidence_quality": {
+            "enum": [
+              "limited",
+              "conflicting"
+            ]
+          }
+        },
+        "required": [
+          "evidence_quality"
+        ]
+      },
+      "then": {
+        "properties": {
+          "assessability": {
+            "const": "partial"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "evidence_quality": {
+            "enum": [
+              "sufficient",
+              "limited",
+              "conflicting"
+            ]
+          }
+        },
+        "required": [
+          "evidence_quality"
+        ]
+      },
+      "then": {
+        "properties": {
+          "evidence_ids": {
+            "minItems": 1
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "evidence_quality": {
+            "const": "unavailable"
+          }
+        },
+        "required": [
+          "evidence_quality"
+        ]
+      },
+      "then": {
+        "properties": {
+          "assessability": {
+            "const": "unavailable"
+          },
+          "evidence_ids": {
+            "maxItems": 0
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "evidence_ids": {
+            "maxItems": 0
+          }
+        },
+        "required": [
+          "evidence_ids"
+        ]
+      },
+      "then": {
+        "properties": {
+          "research_outcome": {
+            "enum": [
+              "indeterminate",
+              "not_applicable"
+            ]
+          },
+          "decision_quality": {
+            "const": "unassessable"
+          },
+          "process_quality": {
+            "const": "unassessable"
+          },
+          "timing_discipline": {
+            "enum": [
+              "unassessable",
+              "not_applicable"
+            ]
+          },
+          "invalidation": {
+            "properties": {
+              "trigger_state": {
+                "enum": [
+                  "unknown",
+                  "not_applicable"
+                ]
+              }
+            }
+          },
+          "attribution": {
+            "maxItems": 0
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "ex_ante_basis": {
+            "enum": [
+              "partial",
+              "unverified"
+            ]
+          }
+        },
+        "required": [
+          "ex_ante_basis"
+        ]
+      },
+      "then": {
+        "properties": {
+          "assessability": {
+            "enum": [
+              "partial",
+              "unavailable"
+            ]
+          },
+          "limitations": {
+            "minItems": 1
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "ex_ante_basis": {
+            "const": "unverified"
+          }
+        },
+        "required": [
+          "ex_ante_basis"
+        ]
+      },
+      "then": {
+        "properties": {
+          "decision_quality": {
+            "const": "unassessable"
+          },
+          "process_quality": {
+            "const": "unassessable"
+          },
+          "timing_discipline": {
+            "enum": [
+              "unassessable",
+              "not_applicable"
+            ]
+          },
+          "invalidation": {
+            "properties": {
+              "trigger_state": {
+                "const": "unknown"
+              },
+              "response_state": {
+                "const": "unknown"
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "evidence_quality": {
+            "const": "unverified"
+          }
+        },
+        "required": [
+          "evidence_quality"
+        ]
+      },
+      "then": {
+        "properties": {
+          "research_outcome": {
+            "enum": [
+              "indeterminate",
+              "not_applicable"
+            ]
+          },
+          "invalidation": {
+            "properties": {
+              "trigger_state": {
+                "enum": [
+                  "unknown",
+                  "not_applicable"
+                ]
+              }
+            }
+          },
+          "attribution": {
+            "maxItems": 0
+          }
+        }
+      }
+    }
+  ]
+}

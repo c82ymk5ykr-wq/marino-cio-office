@@ -31,7 +31,9 @@ prompts, ranking weights, provider adapters, positions, and implementation code.
 9. **Publish and persist privately.** Produce the manifest and report, record the
    durable persistence outcome, and preserve any failure without relying on a
    temporary link as the source of truth.
-10. **Review outcomes.** Feed approved private lessons back through the Chief
+10. **Review outcomes.** Append a private review under the
+    [outcome-review contract](outcome-review-contract.md), preserve the original
+    decision, and feed only separately approved lessons back through the Chief
     Historian and future process decisions.
 
 ## Canonical roles and capabilities

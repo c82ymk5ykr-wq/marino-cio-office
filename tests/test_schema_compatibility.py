@@ -135,6 +135,63 @@ ENUM_CASES = [
         ("deployment", "action"),
         ["no_action", "initiate", "add", "trim", "exit"],
     ),
+    (
+        "outcome-review",
+        "outcome-review-1.0.0-assessable",
+        ("research_outcome",),
+        ["favorable", "mixed", "adverse", "indeterminate", "not_applicable"],
+    ),
+    (
+        "outcome-review",
+        "outcome-review-1.0.0-assessable",
+        ("decision_quality",),
+        ["well_supported", "mixed_support", "weakly_supported"],
+    ),
+    (
+        "outcome-review",
+        "outcome-review-1.0.0-assessable",
+        ("process_quality",),
+        ["disciplined", "mixed", "undisciplined"],
+    ),
+    (
+        "outcome-review",
+        "outcome-review-1.0.0-assessable",
+        ("timing_discipline",),
+        [
+            "followed",
+            "partially_followed",
+            "not_followed",
+            "not_applicable",
+        ],
+    ),
+    (
+        "outcome-review",
+        "outcome-review-1.0.0-assessable",
+        ("attribution", 0, "category"),
+        [
+            "thesis",
+            "evidence",
+            "catalyst",
+            "regime",
+            "timing",
+            "risk",
+            "invalidation",
+            "process",
+            "other",
+        ],
+    ),
+    (
+        "outcome-review",
+        "outcome-review-1.0.0-assessable",
+        ("attribution", 0, "direction"),
+        ["supporting", "detracting", "mixed", "neutral", "unknown"],
+    ),
+    (
+        "outcome-review",
+        "outcome-review-1.0.0-assessable",
+        ("attribution", 0, "confidence"),
+        ["low", "medium", "high"],
+    ),
 ]
 
 
@@ -217,12 +274,114 @@ class SchemaCompatibilityTests(unittest.TestCase):
                 with self.subTest(contract=contract_name, path=path, value=value):
                     self.assertEqual([], list(validator.iter_errors(instance)))
 
+    def test_outcome_review_v1_assessability_states_are_frozen(self) -> None:
+        fixtures = self.contracts["outcome-review"]["fixtures"]
+        states = {
+            (
+                fixture["instance"]["assessability"],
+                fixture["instance"]["ex_ante_basis"],
+                fixture["instance"]["evidence_quality"],
+            )
+            for fixture in fixtures
+        }
+        self.assertEqual(
+            {
+                ("assessable", "verified", "sufficient"),
+                ("partial", "unverified", "unverified"),
+                ("unavailable", "verified", "unavailable"),
+            },
+            states,
+        )
+
+    def test_outcome_review_v1_intermediate_evidence_states_are_frozen(self) -> None:
+        validator = validator_for(
+            self.contracts["outcome-review"]["schema_path"]
+        )
+        for evidence_quality in ("limited", "conflicting"):
+            instance = copy.deepcopy(
+                self.fixture("outcome-review", "outcome-review-1.0.0-assessable")
+            )
+            instance["assessability"] = "partial"
+            instance["evidence_quality"] = evidence_quality
+            instance["limitations"] = [
+                "Fictional compatibility limitation for an incomplete review."
+            ]
+            with self.subTest(evidence_quality=evidence_quality):
+                self.assertEqual([], list(validator.iter_errors(instance)))
+
+        partial_basis = copy.deepcopy(
+            self.fixture("outcome-review", "outcome-review-1.0.0-assessable")
+        )
+        partial_basis["assessability"] = "partial"
+        partial_basis["ex_ante_basis"] = "partial"
+        partial_basis["limitations"] = [
+            "Fictional compatibility limitation for a partial ex-ante basis."
+        ]
+        self.assertEqual([], list(validator.iter_errors(partial_basis)))
+
+    def test_outcome_review_v1_invalidation_matrix_is_frozen(self) -> None:
+        validator = validator_for(
+            self.contracts["outcome-review"]["schema_path"]
+        )
+        cases = [
+            ("not_triggered", "not_required", False),
+            ("triggered", "followed", True),
+            ("triggered", "delayed", True),
+            ("triggered", "not_followed", True),
+            ("triggered", "unknown", True),
+            ("ambiguous", "unknown", False),
+            ("unknown", "unknown", False),
+            ("not_applicable", "not_applicable", False),
+        ]
+        for trigger_state, response_state, needs_evidence in cases:
+            instance = copy.deepcopy(
+                self.fixture("outcome-review", "outcome-review-1.0.0-assessable")
+            )
+            if trigger_state in {"ambiguous", "unknown"} or response_state == "unknown":
+                instance["assessability"] = "partial"
+                instance["limitations"] = [
+                    "Fictional compatibility limitation for an unresolved state."
+                ]
+            instance["invalidation"] = {
+                "trigger_state": trigger_state,
+                "response_state": response_state,
+                "evidence_ids": (
+                    [instance["evidence_ids"][0]] if needs_evidence else []
+                ),
+                "note": "Fictional compatibility invalidation state.",
+            }
+            with self.subTest(trigger=trigger_state, response=response_state):
+                self.assertEqual([], list(validator.iter_errors(instance)))
+
+    def test_outcome_review_v1_unassessable_axes_are_frozen(self) -> None:
+        validator = validator_for(
+            self.contracts["outcome-review"]["schema_path"]
+        )
+        instance = copy.deepcopy(
+            self.fixture("outcome-review", "outcome-review-1.0.0-partial")
+        )
+        self.assertEqual("unassessable", instance["decision_quality"])
+        self.assertEqual("unassessable", instance["process_quality"])
+        self.assertEqual("unassessable", instance["timing_discipline"])
+        self.assertEqual([], list(validator.iter_errors(instance)))
+
+    def test_outcome_review_v1_supersession_link_is_frozen(self) -> None:
+        validator = validator_for(
+            self.contracts["outcome-review"]["schema_path"]
+        )
+        instance = copy.deepcopy(
+            self.fixture("outcome-review", "outcome-review-1.0.0-assessable")
+        )
+        instance["supersedes_review_id"] = "synthetic-prior-review"
+        self.assertEqual([], list(validator.iter_errors(instance)))
+
     def test_historical_length_boundaries_remain_accepted(self) -> None:
         cases = [
             ("report-manifest", "report-manifest-1.0.0-complete", ("report_id",), "R" * 160),
             ("investment-idea", "investment-idea-1.0.0", ("idea_id",), "I" * 160),
             ("investment-idea", "investment-idea-1.0.0", ("asset", "symbol"), "S" * 32),
             ("decision-record", "decision-record-1.0.0", ("decision_id",), "D" * 160),
+            ("outcome-review", "outcome-review-1.0.0-assessable", ("review_id",), "O" * 160),
         ]
         for contract_name, fixture_id, path, value in cases:
             validator = validator_for(self.contracts[contract_name]["schema_path"])

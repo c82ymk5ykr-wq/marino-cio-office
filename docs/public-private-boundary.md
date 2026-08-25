@@ -23,6 +23,8 @@ not be merged casually.
   performance, tax, estate, insurance, or planning information;
 - actual CIO decisions, generated reports or PDFs, Chief Historian memory, logs,
   traces, snapshots, and durable storage references;
+- real populated outcome reviews, attribution entries, lesson candidates,
+  review clocks, outcome aggregates, and performance history;
 - raw market, research, news, or provider data without redistribution rights;
 - raw chat transcripts or exported conversation context.
 

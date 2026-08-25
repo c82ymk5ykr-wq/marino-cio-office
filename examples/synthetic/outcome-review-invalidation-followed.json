@@ -1,0 +1,44 @@
+{
+  "schema_version": "1.0.0",
+  "review_id": "synthetic-review-003",
+  "decision_id": "synthetic-decision-001",
+  "idea_id": "synthetic-idea-001",
+  "reviewed_at": "2026-02-18T14:00:00Z",
+  "evaluation_window": {
+    "started_at": "2026-01-15T14:06:00Z",
+    "ended_at": "2026-02-15T14:05:00Z"
+  },
+  "evidence_cutoff_at": "2026-02-17T14:00:00Z",
+  "assessability": "assessable",
+  "ex_ante_basis": "verified",
+  "evidence_quality": "sufficient",
+  "research_outcome": "mixed",
+  "decision_quality": "well_supported",
+  "process_quality": "disciplined",
+  "timing_discipline": "followed",
+  "invalidation": {
+    "trigger_state": "triggered",
+    "response_state": "followed",
+    "evidence_ids": [
+      "synthetic-outcome-evidence-003"
+    ],
+    "note": "The fictional trigger was recognized and the predeclared reassessment response was followed."
+  },
+  "attribution": [
+    {
+      "factor_id": "synthetic-factor-003",
+      "category": "invalidation",
+      "direction": "supporting",
+      "confidence": "high",
+      "evidence_ids": [
+        "synthetic-outcome-evidence-003"
+      ],
+      "note": "The invented evidence supports only the conclusion that the declared invalidation process was followed."
+    }
+  ],
+  "evidence_ids": [
+    "synthetic-outcome-evidence-003"
+  ],
+  "assessment_note": "The fictional invalidation occurred and the process response was timely; this does not imply an investment result.",
+  "limitations": []
+}

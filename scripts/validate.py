@@ -44,10 +44,13 @@ REQUIRED_FILES = {
     "docs/decisions/0004-verifiable-idea-lineage.md",
     "docs/decisions/0005-v1-schema-compatibility-gate.md",
     "docs/decisions/0006-deterministic-report-acceptance.md",
+    "docs/decisions/0007-private-contract-adoption-attestation.md",
+    "docs/decisions/0008-append-only-outcome-review.md",
     "docs/decisions/README.md",
     "docs/contract-vocabulary.md",
     "docs/idea-lineage-metrics.md",
     "docs/operating-model.md",
+    "docs/outcome-review-contract.md",
     "docs/public-private-boundary.md",
     "docs/report-acceptance-gates.md",
     "docs/schema-compatibility-policy.md",
@@ -61,6 +64,13 @@ REQUIRED_FILES = {
     "examples/synthetic/investment-idea-repeat-unchanged.json",
     "examples/synthetic/investment-idea-stale-repeat.json",
     "examples/synthetic/investment-idea-unverified-lineage.json",
+    "examples/synthetic/outcome-review-adverse-disciplined.json",
+    "examples/synthetic/outcome-review-correction.json",
+    "examples/synthetic/outcome-review-favorable-undisciplined.json",
+    "examples/synthetic/outcome-review-invalidation-delayed.json",
+    "examples/synthetic/outcome-review-invalidation-followed.json",
+    "examples/synthetic/outcome-review-partial-unverified.json",
+    "examples/synthetic/outcome-review-unavailable.json",
     "examples/synthetic/report-acceptance-cases.json",
     "examples/synthetic/report-manifest-legacy-1.0.json",
     "examples/synthetic/report-manifest.json",
@@ -68,14 +78,17 @@ REQUIRED_FILES = {
     "requirements-validation.txt",
     "schemas/v1/decision-record.schema.json",
     "schemas/v1/investment-idea.schema.json",
+    "schemas/v1/outcome-review.schema.json",
     "schemas/v1/report-manifest.schema.json",
     "scripts/validate.py",
     "templates/architecture-decision.md",
     "templates/daily-decision-report.md",
     "templates/decision-record.md",
+    "templates/outcome-review.md",
     "tests/compatibility/v1-fixtures.json",
     "tests/schema_helpers.py",
     "tests/test_report_acceptance.py",
+    "tests/test_outcome_review.py",
     "tests/test_schema_compatibility.py",
     "tests/test_schema_validation.py",
 }
@@ -84,6 +97,7 @@ SCHEMA_FIXTURE_FAMILIES = {
     Path("schemas/v1/report-manifest.schema.json"): "report-manifest",
     Path("schemas/v1/investment-idea.schema.json"): "investment-idea",
     Path("schemas/v1/decision-record.schema.json"): "decision-record",
+    Path("schemas/v1/outcome-review.schema.json"): "outcome-review",
 }
 
 FORBIDDEN_DIRECTORIES = {
@@ -153,6 +167,8 @@ def walk_timestamps(value: object, location: str, errors: list[str]) -> None:
     timestamp_keys = {
         "checked_at",
         "data_as_of",
+        "evidence_cutoff_at",
+        "ended_at",
         "first_seen_at",
         "generated_at",
         "last_seen_at",
@@ -163,6 +179,8 @@ def walk_timestamps(value: object, location: str, errors: list[str]) -> None:
         "recorded_at",
         "retrieved_at",
         "review_by",
+        "reviewed_at",
+        "started_at",
     }
 
     if isinstance(value, dict):
@@ -1534,6 +1552,195 @@ def validate_idea_fixture(
     return classification
 
 
+def validate_outcome_review_fixture(
+    path: Path,
+    value: object,
+    decisions_by_id: dict[str, dict[str, object]],
+    idea_ids: set[str],
+    errors: list[str],
+) -> None:
+    """Validate outcome-review joins, evidence references, and clock order."""
+
+    location = str(path)
+    if not isinstance(value, dict):
+        errors.append(f"{location}: expected a JSON object")
+        return
+
+    review_id = value.get("review_id")
+    if not isinstance(review_id, str) or not review_id.strip():
+        errors.append(f"{location}.review_id: expected a non-whitespace opaque ID")
+
+    supersedes_review_id = value.get("supersedes_review_id")
+    if isinstance(review_id, str) and supersedes_review_id == review_id:
+        errors.append(
+            f"{location}.supersedes_review_id: a review cannot supersede itself"
+        )
+
+    decision_id = value.get("decision_id")
+    decision = (
+        decisions_by_id.get(decision_id) if isinstance(decision_id, str) else None
+    )
+    if decision is None:
+        errors.append(f"{location}.decision_id: linked decision does not exist")
+
+    idea_id = value.get("idea_id")
+    if not isinstance(idea_id, str) or idea_id not in idea_ids:
+        errors.append(f"{location}.idea_id: linked idea does not exist")
+    if decision is not None and idea_id != decision.get("idea_id"):
+        errors.append(f"{location}: idea_id does not match the linked decision")
+
+    recorded_at = timestamp_value(decision.get("recorded_at")) if decision else None
+    reviewed_at = timestamp_value(value.get("reviewed_at"))
+    evidence_cutoff_at = timestamp_value(value.get("evidence_cutoff_at"))
+    if "reviewed_at" in value and reviewed_at is None:
+        errors.append(f"{location}.reviewed_at: invalid UTC timestamp")
+    if "evidence_cutoff_at" in value and evidence_cutoff_at is None:
+        errors.append(f"{location}.evidence_cutoff_at: invalid UTC timestamp")
+    evaluation_window = value.get("evaluation_window")
+    started_at: datetime | None = None
+    ended_at: datetime | None = None
+    if isinstance(evaluation_window, dict):
+        started_at = timestamp_value(evaluation_window.get("started_at"))
+        ended_at = timestamp_value(evaluation_window.get("ended_at"))
+        if "started_at" in evaluation_window and started_at is None:
+            errors.append(
+                f"{location}.evaluation_window.started_at: invalid UTC timestamp"
+            )
+        if "ended_at" in evaluation_window and ended_at is None:
+            errors.append(
+                f"{location}.evaluation_window.ended_at: invalid UTC timestamp"
+            )
+
+    if recorded_at and reviewed_at and recorded_at > reviewed_at:
+        errors.append(f"{location}: decision recorded_at cannot be after reviewed_at")
+    if recorded_at and started_at and recorded_at > started_at:
+        errors.append(
+            f"{location}: decision recorded_at cannot be after evaluation start"
+        )
+    if started_at and ended_at and started_at >= ended_at:
+        errors.append(f"{location}: evaluation start must be before evaluation end")
+    if ended_at and evidence_cutoff_at and ended_at > evidence_cutoff_at:
+        errors.append(f"{location}: evaluation end cannot be after evidence cutoff")
+    if evidence_cutoff_at and reviewed_at and evidence_cutoff_at > reviewed_at:
+        errors.append(f"{location}: evidence cutoff cannot be after reviewed_at")
+    if ended_at and reviewed_at and ended_at > reviewed_at:
+        errors.append(f"{location}: evaluation end cannot be after reviewed_at")
+    if recorded_at and evidence_cutoff_at and recorded_at > evidence_cutoff_at:
+        errors.append(f"{location}: decision recorded_at cannot be after evidence cutoff")
+
+    evidence = value.get("evidence_ids")
+    root_evidence = (
+        {evidence_id for evidence_id in evidence if isinstance(evidence_id, str)}
+        if isinstance(evidence, list)
+        else set()
+    )
+
+    invalidation = value.get("invalidation")
+    if isinstance(invalidation, dict):
+        invalidation_evidence = invalidation.get("evidence_ids")
+        if isinstance(invalidation_evidence, list):
+            if any(
+                not isinstance(evidence_id, str) or evidence_id not in root_evidence
+                for evidence_id in invalidation_evidence
+            ):
+                errors.append(
+                    f"{location}.invalidation.evidence_ids: dangling review evidence IDs"
+                )
+
+    factors = value.get("attribution")
+    factor_ids: set[str] = set()
+    if isinstance(factors, list):
+        for index, factor in enumerate(factors):
+            factor_location = f"{location}.attribution[{index}]"
+            if not isinstance(factor, dict):
+                continue
+            factor_id = factor.get("factor_id")
+            if isinstance(factor_id, str):
+                if factor_id in factor_ids:
+                    errors.append(f"{factor_location}.factor_id: duplicate factor ID")
+                factor_ids.add(factor_id)
+            factor_evidence = factor.get("evidence_ids")
+            if isinstance(factor_evidence, list) and any(
+                not isinstance(evidence_id, str) or evidence_id not in root_evidence
+                for evidence_id in factor_evidence
+            ):
+                errors.append(
+                    f"{factor_location}.evidence_ids: dangling review evidence ID"
+                )
+
+
+def validate_outcome_review_cohort(
+    reviews: list[tuple[Path, object]], errors: list[str]
+) -> None:
+    """Validate append-only supersession links across an outcome-review cohort."""
+
+    reviews_by_id: dict[str, tuple[Path, dict[str, object]]] = {}
+    for path, review in reviews:
+        if not isinstance(review, dict):
+            continue
+        review_id = review.get("review_id")
+        if isinstance(review_id, str) and review_id not in reviews_by_id:
+            reviews_by_id[review_id] = (path, review)
+
+    for review_id, (path, review) in reviews_by_id.items():
+        predecessor_id = review.get("supersedes_review_id")
+        if not isinstance(predecessor_id, str) or predecessor_id == review_id:
+            continue
+
+        predecessor_entry = reviews_by_id.get(predecessor_id)
+        if predecessor_entry is None:
+            errors.append(
+                f"{path}.supersedes_review_id: linked prior review does not exist"
+            )
+            continue
+
+        predecessor_path, predecessor = predecessor_entry
+        if predecessor.get("decision_id") != review.get("decision_id"):
+            errors.append(
+                f"{path}.supersedes_review_id: prior review {predecessor_path} "
+                "has a different decision_id"
+            )
+        if predecessor.get("idea_id") != review.get("idea_id"):
+            errors.append(
+                f"{path}.supersedes_review_id: prior review {predecessor_path} "
+                "has a different idea_id"
+            )
+
+        predecessor_reviewed_at = timestamp_value(predecessor.get("reviewed_at"))
+        reviewed_at = timestamp_value(review.get("reviewed_at"))
+        if (
+            predecessor_reviewed_at is not None
+            and reviewed_at is not None
+            and predecessor_reviewed_at >= reviewed_at
+        ):
+            errors.append(
+                f"{path}.supersedes_review_id: prior review must have an earlier "
+                "reviewed_at"
+            )
+
+    reported_cycles: set[frozenset[str]] = set()
+    for start_id, (start_path, _) in reviews_by_id.items():
+        chain: list[str] = []
+        positions: dict[str, int] = {}
+        current_id = start_id
+        while current_id in reviews_by_id:
+            if current_id in positions:
+                cycle = frozenset(chain[positions[current_id] :])
+                if cycle and cycle not in reported_cycles:
+                    reported_cycles.add(cycle)
+                    errors.append(
+                        f"{start_path}.supersedes_review_id: supersession cycle detected"
+                    )
+                break
+            positions[current_id] = len(chain)
+            chain.append(current_id)
+            current_review = reviews_by_id[current_id][1]
+            predecessor_id = current_review.get("supersedes_review_id")
+            if not isinstance(predecessor_id, str):
+                break
+            current_id = predecessor_id
+
+
 def validate_examples(parsed: dict[Path, object], errors: list[str]) -> None:
     report_path = Path("examples/synthetic/report-manifest.json")
     legacy_report_path = Path("examples/synthetic/report-manifest-legacy-1.0.json")
@@ -1557,6 +1764,14 @@ def validate_examples(parsed: dict[Path, object], errors: list[str]) -> None:
         and path.suffix == ".json"
     )
     ideas = [(path, parsed.get(path)) for path in idea_paths]
+    outcome_review_paths = sorted(
+        path
+        for path in parsed
+        if path.parent == Path("examples/synthetic")
+        and path.name.startswith("outcome-review")
+        and path.suffix == ".json"
+    )
+    outcome_reviews = [(path, parsed.get(path)) for path in outcome_review_paths]
 
     require_keys(
         report,
@@ -1606,6 +1821,7 @@ def validate_examples(parsed: dict[Path, object], errors: list[str]) -> None:
         (legacy_report_path, legacy_report),
         (decision_path, decision),
         *ideas,
+        *outcome_reviews,
     ]:
         walk_timestamps(value, str(path), errors)
 
@@ -1730,6 +1946,72 @@ def validate_examples(parsed: dict[Path, object], errors: list[str]) -> None:
         if decision.get("idea_id") != primary_idea.get("idea_id"):
             errors.append(f"{decision_path}: idea link does not match primary synthetic idea")
 
+    decisions_by_id: dict[str, dict[str, object]] = {}
+    if isinstance(decision, dict) and isinstance(decision.get("decision_id"), str):
+        decisions_by_id[decision["decision_id"]] = decision
+
+    review_ids: dict[str, Path] = {}
+    review_values: list[dict[str, object]] = []
+    for path, review in outcome_reviews:
+        validate_outcome_review_fixture(
+            path, review, decisions_by_id, set(idea_ids), errors
+        )
+        if not isinstance(review, dict):
+            continue
+        if review.get("schema_version") != "1.0.0":
+            errors.append(f"{path}: synthetic outcome review must use version 1.0.0")
+        review_id = review.get("review_id")
+        if isinstance(review_id, str):
+            if review_id in review_ids:
+                errors.append(
+                    f"{path}.review_id: duplicate review ID also used by {review_ids[review_id]}"
+                )
+            else:
+                review_ids[review_id] = path
+        review_values.append(review)
+
+    validate_outcome_review_cohort(outcome_reviews, errors)
+
+    outcome_case_coverage = {
+        "adverse_with_disciplined_process": any(
+            review.get("research_outcome") == "adverse"
+            and review.get("process_quality") == "disciplined"
+            for review in review_values
+        ),
+        "favorable_with_undisciplined_process": any(
+            review.get("research_outcome") == "favorable"
+            and review.get("process_quality") == "undisciplined"
+            for review in review_values
+        ),
+        "triggered_invalidation_followed": any(
+            isinstance(review.get("invalidation"), dict)
+            and review["invalidation"].get("trigger_state") == "triggered"
+            and review["invalidation"].get("response_state") == "followed"
+            for review in review_values
+        ),
+        "triggered_invalidation_delayed_or_not_followed": any(
+            isinstance(review.get("invalidation"), dict)
+            and review["invalidation"].get("trigger_state") == "triggered"
+            and review["invalidation"].get("response_state")
+            in {"delayed", "not_followed"}
+            for review in review_values
+        ),
+        "partial_or_unverified": any(
+            review.get("assessability") == "partial"
+            or review.get("ex_ante_basis") == "unverified"
+            or review.get("evidence_quality") == "unverified"
+            for review in review_values
+        ),
+    }
+    missing_outcome_cases = sorted(
+        name for name, present in outcome_case_coverage.items() if not present
+    )
+    if missing_outcome_cases:
+        errors.append(
+            "synthetic outcome reviews do not cover: "
+            + ", ".join(missing_outcome_cases)
+        )
+
     verified = [
         idea
         for idea in version_11_ideas
@@ -1846,6 +2128,60 @@ def validate_examples(parsed: dict[Path, object], errors: list[str]) -> None:
                     Path(f"{compatibility_path}::report-manifest[{index}]"),
                     errors,
                 )
+        if isinstance(contracts, dict):
+            decision_contract = contracts.get("decision-record")
+            idea_contract = contracts.get("investment-idea")
+            outcome_contract = contracts.get("outcome-review")
+            decision_fixtures = (
+                decision_contract.get("fixtures")
+                if isinstance(decision_contract, dict)
+                else []
+            )
+            idea_fixtures = (
+                idea_contract.get("fixtures")
+                if isinstance(idea_contract, dict)
+                else []
+            )
+            outcome_fixtures = (
+                outcome_contract.get("fixtures")
+                if isinstance(outcome_contract, dict)
+                else []
+            )
+            compatibility_decisions: dict[str, dict[str, object]] = {}
+            if isinstance(decision_fixtures, list):
+                for fixture in decision_fixtures:
+                    instance = fixture.get("instance") if isinstance(fixture, dict) else None
+                    if isinstance(instance, dict) and isinstance(
+                        instance.get("decision_id"), str
+                    ):
+                        compatibility_decisions[instance["decision_id"]] = instance
+            compatibility_idea_ids: set[str] = set()
+            if isinstance(idea_fixtures, list):
+                for fixture in idea_fixtures:
+                    instance = fixture.get("instance") if isinstance(fixture, dict) else None
+                    if isinstance(instance, dict) and isinstance(
+                        instance.get("idea_id"), str
+                    ):
+                        compatibility_idea_ids.add(instance["idea_id"])
+            if isinstance(outcome_fixtures, list):
+                compatibility_reviews: list[tuple[Path, object]] = []
+                for index, fixture in enumerate(outcome_fixtures):
+                    if not isinstance(fixture, dict):
+                        continue
+                    fixture_path = Path(
+                        f"{compatibility_path}::outcome-review[{index}]"
+                    )
+                    compatibility_reviews.append(
+                        (fixture_path, fixture.get("instance"))
+                    )
+                    validate_outcome_review_fixture(
+                        fixture_path,
+                        fixture.get("instance"),
+                        compatibility_decisions,
+                        compatibility_idea_ids,
+                        errors,
+                    )
+                validate_outcome_review_cohort(compatibility_reviews, errors)
     validate_report_acceptance_cases(acceptance, errors)
     validate_universe_completion_cases(completion, errors)
 

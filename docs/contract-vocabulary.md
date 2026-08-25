@@ -29,6 +29,13 @@ another axis or used as evidence that another gate passed.
 | Deployment action | `decision-record.deployment.action` | The action selected by the deployment process |
 | Artifact outcome | `report-manifest.artifact.status` | Whether the report reached approved durable private storage |
 | Evidence provenance | `provenance` | How evidence entered the current decision product |
+| Review assessability | `outcome-review.assessability` | Whether retained evidence supports a full, partial, or unavailable review |
+| Research outcome | `outcome-review.research_outcome` | Qualitative research-case result, never investment performance |
+| Decision quality | `outcome-review.decision_quality` | Ex-ante support for the decision given evidence then available |
+| Process quality | `outcome-review.process_quality` | Adherence to the declared decision process |
+| Timing discipline | `outcome-review.timing_discipline` | Adherence to declared timing and confirmation prerequisites |
+| Invalidation state | `outcome-review.invalidation` | Separate trigger and response states for declared invalidation conditions |
+| Attribution direction | `outcome-review.attribution[].direction` | Qualitative evidence-linked association without causal or numeric contribution claims |
 
 `complete`, `ready`, `advance`, and `high` never mean recommended, suitable for
 a client, or authorized for deployment. Research disposition and deployment
@@ -67,6 +74,10 @@ All contract timestamps are RFC 3339 date-times in UTC and end in `Z`.
 | `last_seen_at` | Most recent recorded appearance of that lineage in the current record |
 | `recorded_at` | When a CIO decision record was created |
 | `review_by` | Deadline for the next required review |
+| `evaluation_window.started_at` | Start of the declared outcome-evaluation horizon |
+| `evaluation_window.ended_at` | End of the declared outcome-evaluation horizon |
+| `evidence_cutoff_at` | Latest evidence time admitted to an outcome review |
+| `reviewed_at` | When an outcome review was finalized |
 
 Generation, evidence, retrieval, persistence, universe-membership, and cycle
 completion are different clocks. A future contract field for one of these
@@ -204,6 +215,42 @@ report view over deployment decisions, not an investment-idea `board` value.
 | `invalidation_conditions` | Conditions requiring reassessment or exit from the research case |
 | `review_by` | Next required review deadline |
 | `evidence_ids` | Evidence records supporting the decision |
+
+## Outcome review field dictionary
+
+| Field | Meaning |
+| --- | --- |
+| `schema_version` | Semantic version of the outcome-review contract |
+| `review_id` | Stable opaque identifier for one append-only review artifact |
+| `supersedes_review_id` | Optional opaque link to the prior review corrected by this append-only artifact |
+| `decision_id` | Opaque link to the immutable ex-ante decision |
+| `idea_id` | Opaque link to the stable idea lineage; it must agree with the linked decision |
+| `reviewed_at` | Review-finalization time |
+| `evaluation_window.started_at` | Start of the declared evaluation horizon |
+| `evaluation_window.ended_at` | End of the declared evaluation horizon |
+| `evidence_cutoff_at` | Latest evidence time admitted to the review |
+| `assessability` | Whether the review is fully assessable, partial, or unavailable |
+| `ex_ante_basis` | Whether retained pre-outcome decision history is verified, partial, or unverified |
+| `evidence_quality` | Sufficiency and reliability of evidence admitted to the review |
+| `research_outcome` | Qualitative research-case outcome; it is not a return, P&L, or benchmark comparison |
+| `decision_quality` | Quality of the decision given evidence available when it was made |
+| `process_quality` | Adherence to the declared decision process, independent of outcome |
+| `timing_discipline` | Adherence to timing and confirmation prerequisites without serializing an action or execution |
+| `invalidation.trigger_state` | Whether a declared invalidation condition occurred, was ambiguous, unknown, or not applicable |
+| `invalidation.response_state` | Whether a required response was followed, delayed, not followed, unknown, or not applicable |
+| `invalidation.evidence_ids` | Review evidence supporting the trigger and response states |
+| `attribution[].factor_id` | Opaque identifier for one qualitative attribution factor |
+| `attribution[].category` | Public factor family without proprietary logic or weights |
+| `attribution[].direction` | Supporting, detracting, mixed, neutral, or unknown association |
+| `attribution[].confidence` | Qualitative confidence in the association, not a probability |
+| `attribution[].evidence_ids` | Evidence supporting the qualitative association |
+| `evidence_ids` | Opaque register of evidence admitted to the review |
+| `assessment_note` | Qualitative explanation of the separate assessment axes |
+| `limitations` | Missing, conflicting, unavailable, or unverified review constraints |
+
+Outcome-review axes never imply each other. In particular, favorable and
+adverse outcomes do not determine decision quality, process quality, timing
+discipline, or invalidation response.
 
 ## Private conformance review
 

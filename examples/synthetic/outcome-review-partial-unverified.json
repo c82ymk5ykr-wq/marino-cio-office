@@ -1,0 +1,26 @@
+{
+  "schema_version": "1.0.0",
+  "review_id": "synthetic-review-005",
+  "decision_id": "synthetic-decision-001",
+  "idea_id": "synthetic-idea-001",
+  "reviewed_at": "2026-02-19T14:00:00Z",
+  "assessability": "partial",
+  "ex_ante_basis": "unverified",
+  "evidence_quality": "unverified",
+  "research_outcome": "indeterminate",
+  "decision_quality": "unassessable",
+  "process_quality": "unassessable",
+  "timing_discipline": "unassessable",
+  "invalidation": {
+    "trigger_state": "unknown",
+    "response_state": "unknown",
+    "evidence_ids": [],
+    "note": "Retained fictional history cannot establish whether the invalidation condition occurred."
+  },
+  "attribution": [],
+  "evidence_ids": [],
+  "assessment_note": "The fictional review remains partial because its ex-ante basis and outcome evidence cannot be verified.",
+  "limitations": [
+    "The fictional retained history is incomplete and was not reconstructed."
+  ]
+}

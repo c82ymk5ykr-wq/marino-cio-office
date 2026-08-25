@@ -421,6 +421,120 @@
           }
         }
       ]
+    },
+    "outcome-review": {
+      "schema_path": "schemas/v1/outcome-review.schema.json",
+      "published_versions": [
+        "1.0.0"
+      ],
+      "fixtures": [
+        {
+          "fixture_id": "outcome-review-1.0.0-assessable",
+          "schema_version": "1.0.0",
+          "instance": {
+            "schema_version": "1.0.0",
+            "review_id": "SYNTH-COMPAT-REVIEW-100",
+            "decision_id": "SYNTH-COMPAT-DECISION-100",
+            "idea_id": "SYNTH-COMPAT-IDEA-100",
+            "reviewed_at": "2026-02-17T14:00:00Z",
+            "evaluation_window": {
+              "started_at": "2026-01-15T14:06:00Z",
+              "ended_at": "2026-02-15T14:05:00Z"
+            },
+            "evidence_cutoff_at": "2026-02-16T14:00:00Z",
+            "assessability": "assessable",
+            "ex_ante_basis": "verified",
+            "evidence_quality": "sufficient",
+            "research_outcome": "adverse",
+            "decision_quality": "well_supported",
+            "process_quality": "disciplined",
+            "timing_discipline": "followed",
+            "invalidation": {
+              "trigger_state": "not_triggered",
+              "response_state": "not_required",
+              "evidence_ids": [],
+              "note": "Fictional compatibility invalidation state."
+            },
+            "attribution": [
+              {
+                "factor_id": "SYNTH-COMPAT-FACTOR-100",
+                "category": "regime",
+                "direction": "detracting",
+                "confidence": "medium",
+                "evidence_ids": [
+                  "SYNTH-COMPAT-OUTCOME-EVIDENCE-100"
+                ],
+                "note": "Fictional qualitative association only."
+              }
+            ],
+            "evidence_ids": [
+              "SYNTH-COMPAT-OUTCOME-EVIDENCE-100"
+            ],
+            "assessment_note": "Fictional compatibility review with no performance implication.",
+            "limitations": []
+          }
+        },
+        {
+          "fixture_id": "outcome-review-1.0.0-partial",
+          "schema_version": "1.0.0",
+          "instance": {
+            "schema_version": "1.0.0",
+            "review_id": "SYNTH-COMPAT-REVIEW-101",
+            "decision_id": "SYNTH-COMPAT-DECISION-100",
+            "idea_id": "SYNTH-COMPAT-IDEA-100",
+            "reviewed_at": "2026-02-18T14:00:00Z",
+            "assessability": "partial",
+            "ex_ante_basis": "unverified",
+            "evidence_quality": "unverified",
+            "research_outcome": "indeterminate",
+            "decision_quality": "unassessable",
+            "process_quality": "unassessable",
+            "timing_discipline": "unassessable",
+            "invalidation": {
+              "trigger_state": "unknown",
+              "response_state": "unknown",
+              "evidence_ids": [],
+              "note": "Fictional retained history is incomplete."
+            },
+            "attribution": [],
+            "evidence_ids": [],
+            "assessment_note": "Fictional partial compatibility review.",
+            "limitations": [
+              "Fictional history was not reconstructed."
+            ]
+          }
+        },
+        {
+          "fixture_id": "outcome-review-1.0.0-unavailable",
+          "schema_version": "1.0.0",
+          "instance": {
+            "schema_version": "1.0.0",
+            "review_id": "SYNTH-COMPAT-REVIEW-102",
+            "decision_id": "SYNTH-COMPAT-DECISION-100",
+            "idea_id": "SYNTH-COMPAT-IDEA-100",
+            "reviewed_at": "2026-02-19T14:00:00Z",
+            "assessability": "unavailable",
+            "ex_ante_basis": "verified",
+            "evidence_quality": "unavailable",
+            "research_outcome": "indeterminate",
+            "decision_quality": "unassessable",
+            "process_quality": "unassessable",
+            "timing_discipline": "not_applicable",
+            "invalidation": {
+              "trigger_state": "not_applicable",
+              "response_state": "not_applicable",
+              "evidence_ids": [],
+              "note": "Fictional outcome evidence is unavailable."
+            },
+            "attribution": [],
+            "evidence_ids": [],
+            "assessment_note": "Fictional unavailable compatibility review.",
+            "limitations": [
+              "No fictional outcome evidence was retained."
+            ]
+          }
+        }
+      ]
     }
   }
 }
