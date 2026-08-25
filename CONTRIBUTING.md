@@ -18,11 +18,14 @@ synthetic examples, and repository validation only.
 Run:
 
 ```bash
+python3 -m pip install --requirement requirements-validation.txt
+python3 -m unittest discover --start-directory tests --pattern 'test_*.py'
 python3 scripts/validate.py
 ```
 
-The validation checks required files, JSON syntax, synthetic-example contract
-basics, relative Markdown links, conflict markers, and forbidden tracked paths.
+The validation checks each schema as JSON Schema Draft 2020-12, validates every
+supported synthetic artifact fixture with date-time format checking, and then
+applies cross-record, arithmetic, lineage, link, and public-boundary checks.
 
 ## Pull-request checklist
 

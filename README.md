@@ -77,6 +77,21 @@ See [the public/private boundary](docs/public-private-boundary.md) and
 5. Run `python3 scripts/validate.py` before committing.
 6. Never call incomplete, stale, or materially under-covered work complete.
 
+## Validate a change
+
+Install the pinned repository-only validator, then run the same tests and
+validation used by CI:
+
+```bash
+python3 -m pip install --requirement requirements-validation.txt
+python3 -m unittest discover --start-directory tests --pattern 'test_*.py'
+python3 scripts/validate.py
+```
+
+JSON Schema checks enforce artifact shape and formats. The repository validator
+also applies semantic rules that JSON Schema cannot express, including coverage
+arithmetic, cross-artifact links, and lineage metrics.
+
 ## Status
 
 Baseline version: `0.1.0`. The repository currently defines governance and

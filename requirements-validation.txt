@@ -1,0 +1,2 @@
+# Runtime used only for public contract validation and repository tests.
+jsonschema[format-nongpl]==4.26.0

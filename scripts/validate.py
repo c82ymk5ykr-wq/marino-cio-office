@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Dependency-free validation for the public Marino CIO Office baseline."""
+"""Validation for the public Marino CIO Office contract repository."""
 
 from __future__ import annotations
 
@@ -11,6 +11,17 @@ from datetime import datetime
 from pathlib import Path
 from statistics import median
 from urllib.parse import unquote
+
+try:
+    from jsonschema import Draft202012Validator, FormatChecker
+    from jsonschema.exceptions import SchemaError
+except ImportError as exc:  # Reported as one actionable repository error in main().
+    Draft202012Validator = None
+    FormatChecker = None
+    SchemaError = Exception
+    JSONSCHEMA_IMPORT_ERROR: ImportError | None = exc
+else:
+    JSONSCHEMA_IMPORT_ERROR = None
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -47,6 +58,7 @@ REQUIRED_FILES = {
     "examples/synthetic/investment-idea-unverified-lineage.json",
     "examples/synthetic/report-manifest.json",
     "examples/synthetic/universe-completion-cases.json",
+    "requirements-validation.txt",
     "schemas/v1/decision-record.schema.json",
     "schemas/v1/investment-idea.schema.json",
     "schemas/v1/report-manifest.schema.json",
@@ -54,6 +66,13 @@ REQUIRED_FILES = {
     "templates/architecture-decision.md",
     "templates/daily-decision-report.md",
     "templates/decision-record.md",
+    "tests/test_schema_validation.py",
+}
+
+SCHEMA_FIXTURE_FAMILIES = {
+    Path("schemas/v1/report-manifest.schema.json"): "report-manifest",
+    Path("schemas/v1/investment-idea.schema.json"): "investment-idea",
+    Path("schemas/v1/decision-record.schema.json"): "decision-record",
 }
 
 FORBIDDEN_DIRECTORIES = {
@@ -194,6 +213,106 @@ def load_json(path: Path, errors: list[str]) -> object | None:
     except json.JSONDecodeError as exc:
         errors.append(f"{path}:{exc.lineno}:{exc.colno}: invalid JSON: {exc.msg}")
     return None
+
+
+def render_json_path(parts: object) -> str:
+    """Render a jsonschema path deque as a stable JSONPath-like location."""
+
+    result = "$"
+    for part in parts:
+        if isinstance(part, int):
+            result += f"[{part}]"
+        elif isinstance(part, str) and re.fullmatch(r"[A-Za-z_][A-Za-z0-9_]*", part):
+            result += f".{part}"
+        else:
+            result += f"[{json.dumps(part)}]"
+    return result
+
+
+def validate_json_schema_examples(
+    parsed: dict[Path, object], errors: list[str]
+) -> None:
+    """Validate public artifact fixtures against their canonical Draft 2020-12 schemas."""
+
+    if JSONSCHEMA_IMPORT_ERROR is not None:
+        errors.append(
+            "JSON Schema validation dependency is missing; install "
+            "requirements-validation.txt before running scripts/validate.py"
+        )
+        return
+
+    assert Draft202012Validator is not None
+    assert FormatChecker is not None
+
+    fixture_root = Path("examples/synthetic")
+    format_checker = FormatChecker()
+    fixture_mapping_counts: dict[Path, int] = {}
+
+    for schema_path, fixture_prefix in SCHEMA_FIXTURE_FAMILIES.items():
+        schema = parsed.get(schema_path)
+        if not isinstance(schema, dict):
+            errors.append(f"{schema_path}: schema could not be loaded")
+            continue
+
+        try:
+            Draft202012Validator.check_schema(schema)
+        except SchemaError as exc:
+            schema_location = render_json_path(exc.absolute_schema_path)
+            errors.append(
+                f"{schema_path}:{schema_location}: invalid Draft 2020-12 schema: "
+                f"{exc.message}"
+            )
+            continue
+
+        validator = Draft202012Validator(schema, format_checker=format_checker)
+        fixture_paths = sorted(
+            path
+            for path in parsed
+            if path.parent == fixture_root
+            and path.name.startswith(fixture_prefix)
+            and path.suffix == ".json"
+        )
+        if not fixture_paths:
+            errors.append(f"{schema_path}: no synthetic fixtures found")
+            continue
+
+        for fixture_path in fixture_paths:
+            fixture_mapping_counts[fixture_path] = (
+                fixture_mapping_counts.get(fixture_path, 0) + 1
+            )
+            instance = parsed[fixture_path]
+            schema_errors = sorted(
+                validator.iter_errors(instance),
+                key=lambda exc: (
+                    tuple(str(part) for part in exc.absolute_path),
+                    tuple(str(part) for part in exc.absolute_schema_path),
+                    str(exc.validator),
+                    exc.message,
+                ),
+            )
+            for exc in schema_errors:
+                instance_location = render_json_path(exc.absolute_path)
+                errors.append(
+                    f"{fixture_path}:{instance_location}: schema violation: "
+                    f"{exc.message}"
+                )
+
+    exempt_fixture_paths = {
+        Path("examples/synthetic/universe-completion-cases.json"),
+    }
+    all_synthetic_json = {
+        path
+        for path in parsed
+        if path.parent == fixture_root and path.suffix == ".json"
+    }
+    unmapped = sorted(
+        all_synthetic_json - fixture_mapping_counts.keys() - exempt_fixture_paths
+    )
+    for fixture_path in unmapped:
+        errors.append(f"{fixture_path}: synthetic JSON fixture is not schema-mapped or exempt")
+    for fixture_path, count in sorted(fixture_mapping_counts.items()):
+        if count != 1:
+            errors.append(f"{fixture_path}: synthetic fixture maps to {count} schemas")
 
 
 def require_keys(
@@ -919,6 +1038,7 @@ def main() -> int:
                 if parsed.get("type") != "object":
                     errors.append(f"{path}: top-level schema type must be object")
 
+    validate_json_schema_examples(parsed_json, errors)
     validate_examples(parsed_json, errors)
 
     if errors:

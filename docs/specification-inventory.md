@@ -43,7 +43,7 @@ summarized. The governing boundary is
 | A temporary download is never durable report persistence | [Public/private boundary](public-private-boundary.md), [report schema](../schemas/v1/report-manifest.schema.json), and [daily report template](../templates/daily-decision-report.md) | Artifact outcome is recorded separately and failed persistence cannot be hidden |
 | Routine refreshes and rewritten commentary do not make an old idea fresh | [Idea lineage metrics](idea-lineage-metrics.md) and [ADR 0004](decisions/0004-verifiable-idea-lineage.md) | Version 1.1 idea classifications and fictional fixtures distinguish data recency from idea novelty |
 | Verified repeats require a reason; missing lineage is unverified and never reconstructed | [Idea lineage metrics](idea-lineage-metrics.md) and [investment-idea schema](../schemas/v1/investment-idea.schema.json) | Classification-specific validator rules and negative checks enforce the policy |
-| Public examples are visibly fictional and contract changes remain compatible within v1 | [Agent rules](../AGENTS.md), [contribution policy](../CONTRIBUTING.md), and [repository validator](../scripts/validate.py) | CI validates required files, links, timestamps, fixtures, arithmetic, and boundary-sensitive paths |
+| Public examples are visibly fictional and contract changes remain compatible within v1 | [Agent rules](../AGENTS.md), [contribution policy](../CONTRIBUTING.md), and [repository validator](../scripts/validate.py) | CI validates Draft 2020-12 schema conformance and date-time formats before applying links, arithmetic, cross-record, lineage, and boundary checks |
 
 ## Normalized ambiguities
 

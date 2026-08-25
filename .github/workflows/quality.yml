@@ -28,5 +28,11 @@ jobs:
         with:
           persist-credentials: false
 
+      - name: Install validation dependency
+        run: python3 -m pip install --disable-pip-version-check --requirement requirements-validation.txt
+
+      - name: Test schema enforcement
+        run: python3 -m unittest discover --start-directory tests --pattern 'test_*.py'
+
       - name: Validate public baseline
         run: python3 scripts/validate.py
