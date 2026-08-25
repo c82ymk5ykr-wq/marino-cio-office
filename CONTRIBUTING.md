@@ -11,6 +11,8 @@ synthetic examples, and repository validation only.
   and present it as synthetic.
 - Check that any third-party material may be redistributed.
 - Make schema changes backward compatible within `schemas/v1/`.
+- Apply the [schema compatibility policy](docs/schema-compatibility-policy.md)
+  and extend its append-only fixture corpus for each published revision.
 - Add a decision record for architectural, boundary, or status-semantic changes.
 
 ## Validation
