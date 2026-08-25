@@ -46,6 +46,7 @@ See [the public/private boundary](docs/public-private-boundary.md) and
 
 - [CIO operating model](docs/operating-model.md)
 - [Canonical contract vocabulary](docs/contract-vocabulary.md)
+- [Universe completion gates](docs/universe-completion-gates.md)
 - [Report manifest schema](schemas/v1/report-manifest.schema.json)
 - [Investment idea schema](schemas/v1/investment-idea.schema.json)
 - [Decision record schema](schemas/v1/decision-record.schema.json)

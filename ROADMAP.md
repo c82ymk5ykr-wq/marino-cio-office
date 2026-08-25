@@ -16,8 +16,8 @@ contract and make a safe, validated change without relying on chat history.
 
 - [ ] Convert remaining chat-born operating decisions into focused issues or
       architecture decisions.
-- [ ] Reconcile field names with the private MarinoTerminal implementation.
-- [ ] Define explicit completion thresholds for each supported universe.
+- [x] Reconcile field names with the private MarinoTerminal implementation.
+- [x] Define explicit completion thresholds for each supported universe.
 - [ ] Define repeat-idea and anti-staleness metrics.
 
 Exit condition: important behavior is referenced by a versioned decision or
