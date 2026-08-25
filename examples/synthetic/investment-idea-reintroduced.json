@@ -1,0 +1,45 @@
+{
+  "schema_version": "1.1.0",
+  "idea_id": "synthetic-idea-reintroduced-001",
+  "first_seen_at": "2025-12-15T14:00:00Z",
+  "last_seen_at": "2026-01-15T14:00:00Z",
+  "lineage": {
+    "status": "verified",
+    "classification": "reintroduced",
+    "last_material_change_at": "2026-01-15T14:00:00Z",
+    "repeat_count": 2,
+    "changed_dimensions": [
+      "research_state",
+      "evidence"
+    ]
+  },
+  "board": "FRESH_IDEA_DISCOVERY",
+  "research_state": "candidate",
+  "asset": {
+    "symbol": "SYNTH-04",
+    "name": "Fictional Transit Logic",
+    "asset_type": "equity"
+  },
+  "thesis": "An invented resolved evidence gap permits a fictional archived case to re-enter research.",
+  "regime_fit": "The reintroduction is independent of any real market regime.",
+  "catalysts": [
+    "A fictional verification event resolved an invented prior blocker."
+  ],
+  "risks": [
+    "The invented verification event proves unreliable."
+  ],
+  "invalidation_conditions": [
+    "The fictional blocker returns."
+  ],
+  "time_horizon": "Illustrative twelve-month research horizon.",
+  "timing_notes": "Reintroduction restores research eligibility only.",
+  "confidence": "low",
+  "evidence": [
+    {
+      "source_id": "synthetic-market-snapshot",
+      "provenance": "INLINE",
+      "claim": "A fictional state-changing evidence item resolved an invented blocker."
+    }
+  ],
+  "repeat_reason": "The prior fictional lineage is reintroduced because evidence changed its research state."
+}

@@ -57,10 +57,17 @@ New or newly material research candidates. Every entry records `first_seen_at`,
 `last_seen_at`, evidence lineage, and why it is fresh. A repeated idea must state
 what changed or why repetition remains decision-useful.
 
+Idea freshness follows the verified lineage classifications in
+[`idea-lineage-metrics.md`](idea-lineage-metrics.md). A routine data refresh,
+regenerated wording, or new repeat rationale does not make an old idea new.
+Missing lineage is marked unverified rather than reconstructed.
+
 ### Core Conviction Monitor
 
 Existing high-priority research cases whose thesis, risks, catalysts,
 invalidation conditions, and deployment status require ongoing review.
+Unchanged repeats are permitted here when their evidence is current and the
+repeat remains decision-useful.
 
 ### Rejected Idea Board
 

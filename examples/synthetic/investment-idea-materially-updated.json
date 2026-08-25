@@ -1,0 +1,45 @@
+{
+  "schema_version": "1.1.0",
+  "idea_id": "synthetic-idea-update-001",
+  "first_seen_at": "2026-01-08T14:00:00Z",
+  "last_seen_at": "2026-01-15T14:00:00Z",
+  "lineage": {
+    "status": "verified",
+    "classification": "materially_updated",
+    "last_material_change_at": "2026-01-15T14:00:00Z",
+    "repeat_count": 3,
+    "changed_dimensions": [
+      "evidence",
+      "catalysts"
+    ]
+  },
+  "board": "FRESH_IDEA_DISCOVERY",
+  "research_state": "advance",
+  "asset": {
+    "symbol": "SYNTH-03",
+    "name": "Fictional Thermal Networks",
+    "asset_type": "equity"
+  },
+  "thesis": "Newly invented evidence strengthens a fictional thermal-upgrade research case.",
+  "regime_fit": "The fictional change is used only to demonstrate a material update.",
+  "catalysts": [
+    "A new fictional project milestone was added this cycle."
+  ],
+  "risks": [
+    "The invented project milestone is later withdrawn."
+  ],
+  "invalidation_conditions": [
+    "The fictional project no longer meets its invented validation rule."
+  ],
+  "time_horizon": "Illustrative nine-month research horizon.",
+  "timing_notes": "The update changes research priority but does not authorize deployment.",
+  "confidence": "low",
+  "evidence": [
+    {
+      "source_id": "synthetic-market-snapshot",
+      "provenance": "INLINE",
+      "claim": "A fictional evidence item and catalyst changed after the prior appearance."
+    }
+  ],
+  "repeat_reason": "The idea repeats because fictional evidence and a catalyst changed the research case."
+}

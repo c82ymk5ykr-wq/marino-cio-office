@@ -5,7 +5,7 @@
   "generated_at": "2026-01-15T14:05:00Z",
   "data_as_of": "2026-01-15T14:00:00Z",
   "status": "provisional",
-  "status_reason": "Two fictional observations are intentionally absent to demonstrate honest incomplete coverage.",
+  "status_reason": "Two fictional observations are absent and one synthetic idea intentionally uses stale evidence.",
   "coverage": {
     "universe": "ten fictional research candidates",
     "expected": 10,
@@ -16,8 +16,8 @@
     ]
   },
   "freshness": {
-    "status": "fresh",
-    "oldest_material_source_as_of": "2026-01-15T13:55:00Z",
+    "status": "stale",
+    "oldest_material_source_as_of": "2026-01-10T14:00:00Z",
     "threshold_hours": 24
   },
   "sources": [
@@ -29,13 +29,28 @@
       "retrieved_at": "2026-01-15T14:01:00Z",
       "status": "available",
       "note": "Entirely fictional source created to demonstrate the contract."
+    },
+    {
+      "source_id": "synthetic-stale-market-snapshot",
+      "category": "market",
+      "provenance": "INLINE",
+      "data_as_of": "2026-01-10T14:00:00Z",
+      "retrieved_at": "2026-01-15T14:01:00Z",
+      "status": "stale",
+      "note": "Entirely fictional stale source created to validate anti-staleness disclosure."
     }
   ],
   "quality_flags": [
-    "INCOMPLETE_SYNTHETIC_COVERAGE"
+    "INCOMPLETE_SYNTHETIC_COVERAGE",
+    "STALE_SYNTHETIC_EVIDENCE"
   ],
   "idea_ids": [
-    "synthetic-idea-001"
+    "synthetic-idea-001",
+    "synthetic-idea-repeat-001",
+    "synthetic-idea-update-001",
+    "synthetic-idea-reintroduced-001",
+    "synthetic-idea-stale-001",
+    "synthetic-idea-unverified-001"
   ],
   "decision_ids": [
     "synthetic-decision-001"

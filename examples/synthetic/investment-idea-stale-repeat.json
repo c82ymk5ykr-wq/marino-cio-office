@@ -1,0 +1,42 @@
+{
+  "schema_version": "1.1.0",
+  "idea_id": "synthetic-idea-stale-001",
+  "first_seen_at": "2026-01-01T14:00:00Z",
+  "last_seen_at": "2026-01-15T14:00:00Z",
+  "lineage": {
+    "status": "verified",
+    "classification": "stale_repeat",
+    "last_material_change_at": "2026-01-05T14:00:00Z",
+    "repeat_count": 4,
+    "changed_dimensions": []
+  },
+  "board": "CORE_CONVICTION_MONITOR",
+  "research_state": "hold",
+  "asset": {
+    "symbol": "SYNTH-05",
+    "name": "Fictional Storage Works",
+    "asset_type": "equity"
+  },
+  "thesis": "An invented storage-cycle case remains visible only to demonstrate stale evidence handling.",
+  "regime_fit": "The example makes no real regime claim.",
+  "catalysts": [
+    "A fictional evidence refresh would be required before reconsideration."
+  ],
+  "risks": [
+    "The stale fictional evidence no longer describes the invented case."
+  ],
+  "invalidation_conditions": [
+    "No current fictional evidence becomes available."
+  ],
+  "time_horizon": "Illustrative research horizon pending evidence refresh.",
+  "timing_notes": "Stale evidence blocks research advancement and deployment.",
+  "confidence": "low",
+  "evidence": [
+    {
+      "source_id": "synthetic-stale-market-snapshot",
+      "provenance": "INLINE",
+      "claim": "The only fictional material evidence fails the stated freshness gate."
+    }
+  ],
+  "repeat_reason": "The idea repeats only to disclose that stale fictional evidence remains an unresolved blocker."
+}

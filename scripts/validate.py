@@ -9,6 +9,7 @@ import subprocess
 import sys
 from datetime import datetime
 from pathlib import Path
+from statistics import median
 from urllib.parse import unquote
 
 
@@ -28,13 +29,21 @@ REQUIRED_FILES = {
     "docs/decisions/0001-public-operating-foundation.md",
     "docs/decisions/0002-canonical-contract-vocabulary.md",
     "docs/decisions/0003-deterministic-universe-completion-gates.md",
+    "docs/decisions/0004-verifiable-idea-lineage.md",
     "docs/decisions/README.md",
     "docs/contract-vocabulary.md",
+    "docs/idea-lineage-metrics.md",
     "docs/operating-model.md",
     "docs/public-private-boundary.md",
     "docs/universe-completion-gates.md",
     "examples/synthetic/decision-record.json",
     "examples/synthetic/investment-idea.json",
+    "examples/synthetic/investment-idea-legacy-1.0.json",
+    "examples/synthetic/investment-idea-materially-updated.json",
+    "examples/synthetic/investment-idea-reintroduced.json",
+    "examples/synthetic/investment-idea-repeat-unchanged.json",
+    "examples/synthetic/investment-idea-stale-repeat.json",
+    "examples/synthetic/investment-idea-unverified-lineage.json",
     "examples/synthetic/report-manifest.json",
     "examples/synthetic/universe-completion-cases.json",
     "schemas/v1/decision-record.schema.json",
@@ -109,6 +118,7 @@ def walk_timestamps(value: object, location: str, errors: list[str]) -> None:
         "first_seen_at",
         "generated_at",
         "last_seen_at",
+        "last_material_change_at",
         "oldest_material_source_as_of",
         "recorded_at",
         "retrieved_at",
@@ -410,16 +420,203 @@ def validate_universe_completion_cases(value: object, errors: list[str]) -> None
                 )
 
 
+IDEA_REQUIRED_KEYS = {
+    "asset",
+    "board",
+    "catalysts",
+    "confidence",
+    "evidence",
+    "first_seen_at",
+    "idea_id",
+    "invalidation_conditions",
+    "last_seen_at",
+    "regime_fit",
+    "research_state",
+    "risks",
+    "schema_version",
+    "thesis",
+    "time_horizon",
+    "timing_notes",
+}
+
+VERIFIED_REPEAT_CLASSES = {
+    "repeat_unchanged",
+    "materially_updated",
+    "reintroduced",
+    "stale_repeat",
+}
+
+LINEAGE_CLASSES = VERIFIED_REPEAT_CLASSES | {"new", "unverified"}
+
+LINEAGE_DIMENSIONS = {
+    "thesis",
+    "evidence",
+    "catalysts",
+    "risks",
+    "invalidation_conditions",
+    "research_state",
+}
+
+
+def timestamp_value(value: object) -> datetime | None:
+    if not isinstance(value, str) or not value.endswith("Z"):
+        return None
+    try:
+        return datetime.fromisoformat(value.replace("Z", "+00:00"))
+    except ValueError:
+        return None
+
+
+def percent_or_none(numerator: int, denominator: int) -> float | None:
+    if denominator == 0:
+        return None
+    return numerator / denominator * 100
+
+
+def validate_idea_fixture(
+    path: Path,
+    value: object,
+    source_statuses: dict[str, str],
+    errors: list[str],
+) -> str | None:
+    location = str(path)
+    require_keys(value, IDEA_REQUIRED_KEYS, location, errors)
+    if not isinstance(value, dict):
+        return None
+
+    version = value.get("schema_version")
+    if version not in {"1.0.0", "1.1.0"}:
+        errors.append(f"{location}.schema_version: expected 1.0.0 or 1.1.0")
+
+    first_seen = timestamp_value(value.get("first_seen_at"))
+    last_seen = timestamp_value(value.get("last_seen_at"))
+    if first_seen and last_seen and first_seen > last_seen:
+        errors.append(f"{location}: first_seen_at is after last_seen_at")
+
+    evidence = value.get("evidence")
+    if not isinstance(evidence, list) or not evidence:
+        errors.append(f"{location}.evidence: expected a non-empty array")
+        evidence = []
+
+    for index, item in enumerate(evidence):
+        evidence_location = f"{location}.evidence[{index}]"
+        require_keys(item, {"source_id", "provenance", "claim"}, evidence_location, errors)
+        if not isinstance(item, dict):
+            continue
+        source_id = item.get("source_id")
+        if not isinstance(source_id, str) or source_id not in source_statuses:
+            errors.append(f"{evidence_location}.source_id: source is not in the report register")
+
+    lineage = value.get("lineage")
+    if version == "1.0.0":
+        if lineage is not None:
+            errors.append(f"{location}: schema 1.0.0 must not contain lineage")
+        return None
+
+    require_keys(lineage, {"status", "classification", "changed_dimensions"}, f"{location}.lineage", errors)
+    if not isinstance(lineage, dict):
+        return None
+
+    status = lineage.get("status")
+    classification = lineage.get("classification")
+    dimensions = lineage.get("changed_dimensions")
+    if status not in {"verified", "unverified"}:
+        errors.append(f"{location}.lineage.status: invalid status")
+    if classification not in LINEAGE_CLASSES:
+        errors.append(f"{location}.lineage.classification: invalid classification")
+        return None
+    if (
+        not isinstance(dimensions, list)
+        or any(dimension not in LINEAGE_DIMENSIONS for dimension in dimensions)
+        or len(set(dimensions)) != len(dimensions)
+    ):
+        errors.append(f"{location}.lineage.changed_dimensions: invalid dimensions")
+        dimensions = []
+
+    if status == "unverified":
+        if classification != "unverified":
+            errors.append(f"{location}: unverified status requires unverified classification")
+        if dimensions:
+            errors.append(f"{location}: unverified lineage cannot claim changed dimensions")
+        if not isinstance(lineage.get("verification_note"), str) or not lineage.get("verification_note"):
+            errors.append(f"{location}: unverified lineage requires verification_note")
+        if "last_material_change_at" in lineage or "repeat_count" in lineage:
+            errors.append(f"{location}: unverified lineage cannot reconstruct material time or count")
+        return classification
+
+    if status != "verified":
+        return classification
+
+    if classification == "unverified":
+        errors.append(f"{location}: verified lineage cannot use unverified classification")
+
+    repeat_count = lineage.get("repeat_count")
+    if not is_non_negative_int(repeat_count):
+        errors.append(f"{location}.lineage.repeat_count: expected a non-negative integer")
+
+    material_time = timestamp_value(lineage.get("last_material_change_at"))
+    if material_time is None:
+        errors.append(f"{location}.lineage.last_material_change_at: invalid or missing UTC time")
+    elif first_seen and last_seen and not (first_seen <= material_time <= last_seen):
+        errors.append(f"{location}: material-change time must fall within retained lineage")
+
+    reason = value.get("repeat_reason")
+    if classification in VERIFIED_REPEAT_CLASSES and (
+        not isinstance(reason, str) or not reason.strip()
+    ):
+        errors.append(f"{location}: verified repeats require repeat_reason")
+
+    if classification == "new":
+        if repeat_count != 0 or dimensions:
+            errors.append(f"{location}: new lineage requires count zero and no changed dimensions")
+        if first_seen and last_seen and material_time and not (
+            first_seen == last_seen == material_time
+        ):
+            errors.append(f"{location}: new lineage timestamps must be equal")
+    elif classification in {"repeat_unchanged", "stale_repeat"}:
+        if not is_non_negative_int(repeat_count) or repeat_count < 1 or dimensions:
+            errors.append(f"{location}: unchanged repeats require a positive count and no changed dimensions")
+    elif classification == "materially_updated":
+        if not is_non_negative_int(repeat_count) or repeat_count < 1 or not dimensions:
+            errors.append(f"{location}: material updates require a positive count and changed dimensions")
+    elif classification == "reintroduced":
+        if (
+            not is_non_negative_int(repeat_count)
+            or repeat_count < 1
+            or "research_state" not in dimensions
+        ):
+            errors.append(f"{location}: reintroduction requires a positive count and research_state change")
+
+    if classification == "stale_repeat":
+        evidence_statuses = {
+            source_statuses.get(item.get("source_id"))
+            for item in evidence
+            if isinstance(item, dict)
+        }
+        if "stale" not in evidence_statuses:
+            errors.append(f"{location}: stale_repeat requires mapped stale evidence")
+
+    return classification
+
+
 def validate_examples(parsed: dict[Path, object], errors: list[str]) -> None:
     report_path = Path("examples/synthetic/report-manifest.json")
-    idea_path = Path("examples/synthetic/investment-idea.json")
+    primary_idea_path = Path("examples/synthetic/investment-idea.json")
+    legacy_idea_path = Path("examples/synthetic/investment-idea-legacy-1.0.json")
     decision_path = Path("examples/synthetic/decision-record.json")
     completion_path = Path("examples/synthetic/universe-completion-cases.json")
 
     report = parsed.get(report_path)
-    idea = parsed.get(idea_path)
     decision = parsed.get(decision_path)
     completion = parsed.get(completion_path)
+    idea_paths = sorted(
+        path
+        for path in parsed
+        if path.parent == Path("examples/synthetic")
+        and path.name.startswith("investment-idea")
+        and path.suffix == ".json"
+    )
+    ideas = [(path, parsed.get(path)) for path in idea_paths]
 
     require_keys(
         report,
@@ -443,29 +640,6 @@ def validate_examples(parsed: dict[Path, object], errors: list[str]) -> None:
         errors,
     )
     require_keys(
-        idea,
-        {
-            "asset",
-            "board",
-            "catalysts",
-            "confidence",
-            "evidence",
-            "first_seen_at",
-            "idea_id",
-            "invalidation_conditions",
-            "last_seen_at",
-            "regime_fit",
-            "research_state",
-            "risks",
-            "schema_version",
-            "thesis",
-            "time_horizon",
-            "timing_notes",
-        },
-        str(idea_path),
-        errors,
-    )
-    require_keys(
         decision,
         {
             "alternatives_considered",
@@ -486,11 +660,15 @@ def validate_examples(parsed: dict[Path, object], errors: list[str]) -> None:
         errors,
     )
 
-    for path, value in ((report_path, report), (idea_path, idea), (decision_path, decision)):
-        if isinstance(value, dict) and value.get("schema_version") != "1.0.0":
-            errors.append(f"{path}: synthetic example must use schema version 1.0.0")
+    for path, value in [(report_path, report), (decision_path, decision), *ideas]:
         walk_timestamps(value, str(path), errors)
 
+    if isinstance(report, dict) and report.get("schema_version") != "1.0.0":
+        errors.append(f"{report_path}: synthetic report must use schema version 1.0.0")
+    if isinstance(decision, dict) and decision.get("schema_version") != "1.0.0":
+        errors.append(f"{decision_path}: synthetic decision must use schema version 1.0.0")
+
+    source_statuses: dict[str, str] = {}
     if isinstance(report, dict):
         coverage = report.get("coverage")
         if isinstance(coverage, dict):
@@ -500,20 +678,19 @@ def validate_examples(parsed: dict[Path, object], errors: list[str]) -> None:
             if isinstance(expected, int) and isinstance(observed, int):
                 if observed > expected:
                     errors.append(f"{report_path}: observed coverage exceeds expected")
-                calculated = 100.0 if expected == 0 else observed / expected * 100
+                calculated = 0.0 if expected == 0 else observed / expected * 100
                 if not isinstance(percent, (int, float)) or abs(percent - calculated) > 0.01:
                     errors.append(f"{report_path}: coverage percent does not match counts")
 
-        if report.get("status") == "complete":
-                if (
-                    expected != observed
-                    or not isinstance(expected, int)
-                    or isinstance(expected, bool)
-                    or expected <= 0
-                    or percent != 100
-                    or coverage.get("gaps")
-                ):
-                    errors.append(f"{report_path}: complete status requires full coverage")
+            if report.get("status") == "complete" and (
+                expected != observed
+                or not isinstance(expected, int)
+                or isinstance(expected, bool)
+                or expected <= 0
+                or percent != 100
+                or coverage.get("gaps")
+            ):
+                errors.append(f"{report_path}: complete status requires full coverage")
 
         freshness = report.get("freshness")
         artifact = report.get("artifact")
@@ -523,17 +700,171 @@ def validate_examples(parsed: dict[Path, object], errors: list[str]) -> None:
             if not isinstance(artifact, dict) or artifact.get("status") != "persisted":
                 errors.append(f"{report_path}: complete status requires durable persistence")
 
-    if isinstance(report, dict) and isinstance(idea, dict):
-        if idea.get("idea_id") not in report.get("idea_ids", []):
-            errors.append(f"{report_path}: synthetic idea ID is not linked")
+        sources = report.get("sources")
+        if isinstance(sources, list):
+            for index, source in enumerate(sources):
+                source_location = f"{report_path}.sources[{index}]"
+                if not isinstance(source, dict):
+                    errors.append(f"{source_location}: expected an object")
+                    continue
+                source_id = source.get("source_id")
+                status = source.get("status")
+                if not isinstance(source_id, str) or not source_id:
+                    errors.append(f"{source_location}.source_id: expected a non-empty string")
+                elif source_id in source_statuses:
+                    errors.append(f"{source_location}.source_id: duplicate source ID")
+                elif isinstance(status, str):
+                    source_statuses[source_id] = status
 
+    classifications: dict[Path, str | None] = {}
+    idea_ids: dict[str, Path] = {}
+    for path, idea in ideas:
+        classification = validate_idea_fixture(path, idea, source_statuses, errors)
+        classifications[path] = classification
+        if not isinstance(idea, dict):
+            continue
+        idea_id = idea.get("idea_id")
+        if not isinstance(idea_id, str) or not idea_id:
+            errors.append(f"{path}.idea_id: expected a non-empty string")
+        elif idea_id in idea_ids:
+            errors.append(f"{path}.idea_id: duplicate idea ID also used by {idea_ids[idea_id]}")
+        else:
+            idea_ids[idea_id] = path
+
+    expected_classes = {
+        "new",
+        "repeat_unchanged",
+        "materially_updated",
+        "reintroduced",
+        "stale_repeat",
+        "unverified",
+    }
+    version_11_ideas = [
+        idea
+        for _, idea in ideas
+        if isinstance(idea, dict) and idea.get("schema_version") == "1.1.0"
+    ]
+    actual_classes = {
+        classification for classification in classifications.values() if classification
+    }
+    if actual_classes != expected_classes:
+        errors.append("synthetic idea fixtures must cover every lineage classification exactly")
+    if len(version_11_ideas) != len(expected_classes):
+        errors.append("synthetic cohort must contain exactly six version 1.1.0 ideas")
+
+    legacy = parsed.get(legacy_idea_path)
+    if not isinstance(legacy, dict) or legacy.get("schema_version") != "1.0.0":
+        errors.append(f"{legacy_idea_path}: legacy fixture must preserve schema 1.0.0")
+
+    if isinstance(report, dict):
+        linked_ids = report.get("idea_ids")
+        if not isinstance(linked_ids, list):
+            errors.append(f"{report_path}.idea_ids: expected an array")
+            linked_ids = []
+        current_ids = {
+            idea.get("idea_id")
+            for idea in version_11_ideas
+            if isinstance(idea.get("idea_id"), str)
+        }
+        if set(linked_ids) != current_ids:
+            errors.append(f"{report_path}: idea_ids must link the full version 1.1.0 cohort")
+
+    primary_idea = parsed.get(primary_idea_path)
     if isinstance(report, dict) and isinstance(decision, dict):
         if decision.get("decision_id") not in report.get("decision_ids", []):
             errors.append(f"{report_path}: synthetic decision ID is not linked")
+    if isinstance(primary_idea, dict) and isinstance(decision, dict):
+        if decision.get("idea_id") != primary_idea.get("idea_id"):
+            errors.append(f"{decision_path}: idea link does not match primary synthetic idea")
 
-    if isinstance(idea, dict) and isinstance(decision, dict):
-        if decision.get("idea_id") != idea.get("idea_id"):
-            errors.append(f"{decision_path}: idea link does not match synthetic idea")
+    verified = [
+        idea
+        for idea in version_11_ideas
+        if isinstance(idea.get("lineage"), dict)
+        and idea["lineage"].get("status") == "verified"
+    ]
+    repeats = [
+        idea
+        for idea in verified
+        if idea["lineage"].get("classification") in VERIFIED_REPEAT_CLASSES
+    ]
+    new_ideas = [idea for idea in verified if idea["lineage"].get("classification") == "new"]
+    material_updates = [
+        idea for idea in repeats if idea["lineage"].get("classification") == "materially_updated"
+    ]
+    reintroduced = [
+        idea for idea in repeats if idea["lineage"].get("classification") == "reintroduced"
+    ]
+    stale_repeats = [
+        idea for idea in repeats if idea["lineage"].get("classification") == "stale_repeat"
+    ]
+    explained = [idea for idea in repeats if isinstance(idea.get("repeat_reason"), str)]
+    unverified_count = len(version_11_ideas) - len(verified)
+
+    expected_rates = {
+        "new": 20.0,
+        "repeat": 80.0,
+        "explained": 100.0,
+        "material": 25.0,
+        "decision_changing": 50.0,
+        "stale": 25.0,
+        "unverified": 100 / 6,
+    }
+    actual_rates = {
+        "new": percent_or_none(len(new_ideas), len(verified)),
+        "repeat": percent_or_none(len(repeats), len(verified)),
+        "explained": percent_or_none(len(explained), len(repeats)),
+        "material": percent_or_none(len(material_updates), len(repeats)),
+        "decision_changing": percent_or_none(
+            len(material_updates) + len(reintroduced), len(repeats)
+        ),
+        "stale": percent_or_none(len(stale_repeats), len(repeats)),
+        "unverified": percent_or_none(unverified_count, len(version_11_ideas)),
+    }
+    for name, expected_rate in expected_rates.items():
+        actual = actual_rates.get(name)
+        if actual is None or abs(actual - expected_rate) > 0.01:
+            errors.append(f"synthetic lineage metric {name} does not match expected rate")
+
+    repeat_ages: list[float] = []
+    for idea in repeats:
+        first_seen = timestamp_value(idea.get("first_seen_at"))
+        last_seen = timestamp_value(idea.get("last_seen_at"))
+        if first_seen and last_seen:
+            repeat_ages.append((last_seen - first_seen).total_seconds() / 3600)
+    if (
+        len(repeat_ages) != 4
+        or median(repeat_ages) != 252.0
+        or max(repeat_ages, default=0) != 744.0
+    ):
+        errors.append("synthetic repeat-age metrics do not match expected values")
+
+    evidence_entries = [
+        evidence
+        for idea in version_11_ideas
+        for evidence in idea.get("evidence", [])
+        if isinstance(evidence, dict)
+    ]
+    known_recency = [
+        evidence
+        for evidence in evidence_entries
+        if source_statuses.get(evidence.get("source_id")) in {"available", "fallback", "stale"}
+    ]
+    stale_evidence = [
+        evidence
+        for evidence in known_recency
+        if source_statuses.get(evidence.get("source_id")) == "stale"
+    ]
+    unknown_evidence = len(evidence_entries) - len(known_recency)
+    if (
+        percent_or_none(len(stale_evidence), len(known_recency)) is None
+        or abs(percent_or_none(len(stale_evidence), len(known_recency)) - 100 / 6) > 0.01
+        or unknown_evidence != 0
+    ):
+        errors.append("synthetic stale-evidence metrics do not match expected values")
+
+    if percent_or_none(0, 0) is not None or percent_or_none(0, 5) != 0.0:
+        errors.append("metric zero-denominator behavior is inconsistent")
 
     validate_universe_completion_cases(completion, errors)
 

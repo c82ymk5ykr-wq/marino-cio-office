@@ -25,7 +25,11 @@
   ],
   "properties": {
     "schema_version": {
-      "const": "1.0.0"
+      "enum": [
+        "1.0.0",
+        "1.1.0"
+      ],
+      "description": "Version 1.1.0 adds explicit, backward-compatible idea-lineage metadata."
     },
     "idea_id": {
       "type": "string",
@@ -155,10 +159,67 @@
         }
       }
     },
+    "lineage": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "status",
+        "classification",
+        "changed_dimensions"
+      ],
+      "properties": {
+        "status": {
+          "type": "string",
+          "enum": [
+            "verified",
+            "unverified"
+          ]
+        },
+        "classification": {
+          "type": "string",
+          "enum": [
+            "new",
+            "repeat_unchanged",
+            "materially_updated",
+            "reintroduced",
+            "stale_repeat",
+            "unverified"
+          ]
+        },
+        "last_material_change_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "repeat_count": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Cumulative verified appearances after the first, including the current repeat."
+        },
+        "changed_dimensions": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": [
+              "thesis",
+              "evidence",
+              "catalysts",
+              "risks",
+              "invalidation_conditions",
+              "research_state"
+            ]
+          },
+          "uniqueItems": true
+        },
+        "verification_note": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
     "repeat_reason": {
       "type": "string",
       "minLength": 1,
-      "description": "Required by operating policy when the idea materially repeats."
+      "description": "Required for every verified repeat. It explains decision usefulness but does not by itself prove freshness or material change."
     }
   },
   "$defs": {
@@ -171,5 +232,275 @@
       },
       "uniqueItems": true
     }
-  }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "schema_version": {
+            "const": "1.0.0"
+          }
+        },
+        "required": [
+          "schema_version"
+        ]
+      },
+      "then": {
+        "not": {
+          "required": [
+            "lineage"
+          ]
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "schema_version": {
+            "const": "1.1.0"
+          }
+        },
+        "required": [
+          "schema_version"
+        ]
+      },
+      "then": {
+        "required": [
+          "lineage"
+        ]
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "lineage": {
+            "properties": {
+              "status": {
+                "const": "verified"
+              }
+            },
+            "required": [
+              "status"
+            ]
+          }
+        },
+        "required": [
+          "lineage"
+        ]
+      },
+      "then": {
+        "properties": {
+          "lineage": {
+            "required": [
+              "last_material_change_at",
+              "repeat_count"
+            ],
+            "properties": {
+              "classification": {
+                "not": {
+                  "const": "unverified"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "lineage": {
+            "properties": {
+              "status": {
+                "const": "unverified"
+              }
+            },
+            "required": [
+              "status"
+            ]
+          }
+        },
+        "required": [
+          "lineage"
+        ]
+      },
+      "then": {
+        "properties": {
+          "lineage": {
+            "required": [
+              "verification_note"
+            ],
+            "properties": {
+              "classification": {
+                "const": "unverified"
+              },
+              "changed_dimensions": {
+                "maxItems": 0
+              }
+            },
+            "not": {
+              "anyOf": [
+                {
+                  "required": [
+                    "last_material_change_at"
+                  ]
+                },
+                {
+                  "required": [
+                    "repeat_count"
+                  ]
+                }
+              ]
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "lineage": {
+            "properties": {
+              "classification": {
+                "const": "new"
+              }
+            },
+            "required": [
+              "classification"
+            ]
+          }
+        },
+        "required": [
+          "lineage"
+        ]
+      },
+      "then": {
+        "properties": {
+          "lineage": {
+            "properties": {
+              "repeat_count": {
+                "const": 0
+              },
+              "changed_dimensions": {
+                "maxItems": 0
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "lineage": {
+            "properties": {
+              "classification": {
+                "enum": [
+                  "repeat_unchanged",
+                  "stale_repeat"
+                ]
+              }
+            },
+            "required": [
+              "classification"
+            ]
+          }
+        },
+        "required": [
+          "lineage"
+        ]
+      },
+      "then": {
+        "required": [
+          "repeat_reason"
+        ],
+        "properties": {
+          "lineage": {
+            "properties": {
+              "repeat_count": {
+                "minimum": 1
+              },
+              "changed_dimensions": {
+                "maxItems": 0
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "lineage": {
+            "properties": {
+              "classification": {
+                "const": "materially_updated"
+              }
+            },
+            "required": [
+              "classification"
+            ]
+          }
+        },
+        "required": [
+          "lineage"
+        ]
+      },
+      "then": {
+        "required": [
+          "repeat_reason"
+        ],
+        "properties": {
+          "lineage": {
+            "properties": {
+              "repeat_count": {
+                "minimum": 1
+              },
+              "changed_dimensions": {
+                "minItems": 1
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "lineage": {
+            "properties": {
+              "classification": {
+                "const": "reintroduced"
+              }
+            },
+            "required": [
+              "classification"
+            ]
+          }
+        },
+        "required": [
+          "lineage"
+        ]
+      },
+      "then": {
+        "required": [
+          "repeat_reason"
+        ],
+        "properties": {
+          "lineage": {
+            "properties": {
+              "repeat_count": {
+                "minimum": 1
+              },
+              "changed_dimensions": {
+                "contains": {
+                  "const": "research_state"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  ]
 }

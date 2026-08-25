@@ -18,7 +18,7 @@ contract and make a safe, validated change without relying on chat history.
       architecture decisions.
 - [x] Reconcile field names with the private MarinoTerminal implementation.
 - [x] Define explicit completion thresholds for each supported universe.
-- [ ] Define repeat-idea and anti-staleness metrics.
+- [x] Define repeat-idea and anti-staleness metrics.
 
 Exit condition: important behavior is referenced by a versioned decision or
 contract, and public terminology does not drift from the private implementation.

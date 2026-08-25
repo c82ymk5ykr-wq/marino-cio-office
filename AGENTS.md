@@ -39,6 +39,8 @@ synthetic.
 - Preserve the provenance labels `PASTED`, `INLINE`, and
   `CIO_LEVEL_INFERENCE`.
 - Track an idea's `first_seen_at` and `last_seen_at`; explain material repeats.
+- Apply `docs/idea-lineage-metrics.md`: routine refreshes do not make an idea
+  new, and missing lineage is unverified rather than reconstructed.
 - Separate research disposition from deployment timing, sizing, and action.
 - Keep `schemas/v1/` backward compatible. Breaking changes require a new schema
   version directory and an Architecture Decision Record (ADR).
