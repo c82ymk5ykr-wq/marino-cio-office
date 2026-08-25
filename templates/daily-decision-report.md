@@ -8,9 +8,9 @@
 | Field | Value |
 | --- | --- |
 | Report ID | `<stable-report-id>` |
-| Contract version | `1.0.0` |
+| Schema version | `1.0.0` |
 | Generated at (UTC) | `<YYYY-MM-DDTHH:MM:SSZ>` |
-| Market/data as of (UTC) | `<YYYY-MM-DDTHH:MM:SSZ>` |
+| Data as of (UTC) | `<YYYY-MM-DDTHH:MM:SSZ>` |
 | Status | `<complete | provisional | degraded | failed>` |
 | Expected / observed coverage | `<expected> / <observed>` |
 | Freshness | `<fresh | stale | unknown>` |
