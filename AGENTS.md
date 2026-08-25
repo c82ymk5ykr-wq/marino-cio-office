@@ -34,6 +34,8 @@ synthetic.
 - Record expected and observed coverage, source health, and persistence outcome.
 - Apply `docs/universe-completion-gates.md` to supported bounded universes;
   minimum runtime readiness is never evidence of full universe completion.
+- Apply `docs/report-acceptance-gates.md` to report-manifest 1.1 artifacts and
+  derive status from serialized gate evidence rather than trusting a label.
 - Use `complete` only when the contract's freshness and coverage gates pass.
 - Disclose unavailable sources and fallbacks; never fabricate completeness.
 - Preserve the provenance labels `PASTED`, `INLINE`, and

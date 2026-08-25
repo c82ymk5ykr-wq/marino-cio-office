@@ -1,5 +1,5 @@
 {
-  "schema_version": "1.0.0",
+  "schema_version": "1.1.0",
   "report_id": "synthetic-daily-20260115",
   "report_type": "daily_decision_report",
   "generated_at": "2026-01-15T14:05:00Z",
@@ -27,6 +27,7 @@
       "provenance": "INLINE",
       "data_as_of": "2026-01-15T13:55:00Z",
       "retrieved_at": "2026-01-15T14:01:00Z",
+      "checked_at": "2026-01-15T14:02:00Z",
       "status": "available",
       "note": "Entirely fictional source created to demonstrate the contract."
     },
@@ -36,13 +37,16 @@
       "provenance": "INLINE",
       "data_as_of": "2026-01-10T14:00:00Z",
       "retrieved_at": "2026-01-15T14:01:00Z",
+      "checked_at": "2026-01-15T14:02:00Z",
       "status": "stale",
       "note": "Entirely fictional stale source created to validate anti-staleness disclosure."
     }
   ],
   "quality_flags": [
-    "INCOMPLETE_SYNTHETIC_COVERAGE",
-    "STALE_SYNTHETIC_EVIDENCE"
+    "DURABLE_PERSISTENCE_NOT_ATTEMPTED",
+    "FRESHNESS_STALE",
+    "INCOMPLETE_COVERAGE",
+    "REQUIRED_SOURCE_STALE"
   ],
   "idea_ids": [
     "synthetic-idea-001",
@@ -55,6 +59,43 @@
   "decision_ids": [
     "synthetic-decision-001"
   ],
+  "gate_inputs": {
+    "reliable_product": true,
+    "completion_profile_id": "declared_bounded_set",
+    "denominator_known": true,
+    "membership_as_of": "2026-01-15T13:45:00Z",
+    "required_period": "synthetic-period-2026-01-15",
+    "required_period_lag_known": true,
+    "required_period_lag": 0,
+    "gap_count": 2,
+    "required_reviews_complete": true,
+    "source_roles": [
+      {
+        "role": "membership_definition",
+        "state": "available",
+        "source_ids": [
+          "synthetic-market-snapshot"
+        ],
+        "note": "Fictional membership evidence is available."
+      },
+      {
+        "role": "eligible_observations",
+        "state": "available",
+        "source_ids": [
+          "synthetic-market-snapshot"
+        ],
+        "note": "Fictional observations are available but do not cover the full declared set."
+      },
+      {
+        "role": "freshness_reference",
+        "state": "stale",
+        "source_ids": [
+          "synthetic-stale-market-snapshot"
+        ],
+        "note": "Fictional freshness evidence is intentionally stale."
+      }
+    ]
+  },
   "artifact": {
     "status": "not_attempted",
     "note": "Synthetic repository examples are not operational report artifacts."

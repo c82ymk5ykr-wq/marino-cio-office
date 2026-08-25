@@ -27,7 +27,7 @@ contract, and public terminology does not drift from the private implementation.
 
 - [x] Add fuller JSON Schema example validation.
 - [x] Add compatibility tests for schema changes.
-- [ ] Define report acceptance checks for freshness, coverage, failed sources,
+- [x] Define report acceptance checks for freshness, coverage, failed sources,
       and durable persistence.
 
 Exit condition: a report can be labeled complete only through deterministic,

@@ -8,17 +8,28 @@
 | Field | Value |
 | --- | --- |
 | Report ID | `<stable-report-id>` |
-| Schema version | `1.0.0` |
+| Schema version | `1.1.0` |
 | Investment-idea schema version | `<1.0.0 | 1.1.0>` |
 | Generated at (UTC) | `<YYYY-MM-DDTHH:MM:SSZ>` |
 | Data as of (UTC) | `<YYYY-MM-DDTHH:MM:SSZ>` |
 | Status | `<complete | provisional | degraded | failed>` |
+| Reliable decision product | `<true | false>` |
 | Universe gate profile | `<broad_equity_daily | curated_etf_daily | declared_bounded_set>` |
-| Membership as of (UTC) | `<YYYY-MM-DDTHH:MM:SSZ>` |
+| Coverage denominator known | `<true | false>` |
+| Membership as of (UTC) | `<YYYY-MM-DDTHH:MM:SSZ or omitted when denominator is unknown>` |
 | Required period | `<latest required market or source period>` |
+| Required-period lag known | `<true | false>` |
+| Required-period lag | `<non-negative period count or omitted when unknown>` |
 | Expected / observed coverage | `<expected> / <observed>` |
+| Gap count | `<non-negative count or omitted when denominator is unknown>` |
 | Freshness | `<fresh | stale | unknown>` |
+| Oldest required-role source as of | `<YYYY-MM-DDTHH:MM:SSZ or omitted when freshness is unknown>` |
+| Required reviews complete | `<true | false>` |
 | Durable persistence | `<persisted | failed | not_attempted>` |
+
+When the denominator is unknown, omit membership and gap-count evidence and use
+`0 / 0` with `0%` as the contract sentinel; do not present it as measured zero
+coverage.
 
 ## Executive decision board
 
@@ -103,22 +114,38 @@ constraints, and performance remain private.
 
 ## Data quality and source register
 
-| Source ID | Provenance | Data as of | Retrieved at | Status | Fallback or failure disclosure |
-| --- | --- | --- | --- | --- | --- |
-| `<source-id>` | `<PASTED | INLINE | CIO_LEVEL_INFERENCE>` | `<UTC>` | `<UTC>` | `<available | fallback | stale | unavailable>` | `<detail>` |
+| Source ID | Provenance | Data as of | Retrieved at | Checked at | Status | Fallback or failure disclosure |
+| --- | --- | --- | --- | --- | --- | --- |
+| `<source-id>` | `<PASTED | INLINE | CIO_LEVEL_INFERENCE>` | `<UTC or omitted when unavailable>` | `<UTC or omitted when unavailable>` | `<UTC>` | `<available | fallback | stale | unavailable>` | `<detail>` |
+
+### Required source-role gates
+
+| Role | Gate state | Source IDs | Disclosure |
+| --- | --- | --- | --- |
+| `membership_definition` | `<available | equivalent_fallback | stale | non_equivalent_fallback | unavailable>` | `<source IDs>` | `<public-safe note>` |
+| `eligible_observations` | `<gate state>` | `<source IDs>` | `<public-safe note>` |
+| `freshness_reference` | `<gate state>` | `<source IDs>` | `<public-safe note>` |
 
 List coverage gaps, stale inputs, unavailable sources, and every material
 fallback. The narrative and top-level status must agree with this section.
+Each source ID linked to a required-role row must have the raw status implied by
+that row. If the freshness-reference role is unavailable, aggregate freshness
+is `unknown`. For known freshness, the oldest-material time is the earliest
+`data_as_of` across all linked required-role sources.
 
 State the deterministic universe-gate result separately from minimum runtime
 readiness. A page load, completed job, non-empty result, or usable subset does
 not establish full universe completion. Apply
 [`docs/universe-completion-gates.md`](../docs/universe-completion-gates.md).
+Derive the top-level report outcome using
+[`docs/report-acceptance-gates.md`](../docs/report-acceptance-gates.md); never
+promote a narrative or UI label over serialized gate evidence.
 
 ## Persistence outcome
 
 - Durable store status: `<persisted | failed | not_attempted>`
-- Opaque private artifact reference: `<reference or omitted>`
+- Non-sensitive opaque receipt token: `<8-128 letters, digits, dots, underscores, or hyphens; omitted unless persisted>`
+- Persisted at (UTC): `<YYYY-MM-DDTHH:MM:SSZ or omitted>`
 - Failure and retry note: `<detail or none>`
 
 ## Follow-ups and next review

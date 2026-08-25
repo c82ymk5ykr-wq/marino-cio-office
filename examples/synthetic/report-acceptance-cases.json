@@ -1,0 +1,338 @@
+{
+  "spec_version": "1.0.0",
+  "defaults": {
+    "reliable_product": true,
+    "denominator_known": true,
+    "expected": 10,
+    "observed": 10,
+    "percent": 100.0,
+    "gap_count": 0,
+    "required_period_lag_known": true,
+    "required_period_lag": 0,
+    "freshness_status": "fresh",
+    "freshness_age_hours": 24.0,
+    "freshness_threshold_hours": 24.0,
+    "required_source_states": [
+      "available",
+      "available",
+      "available"
+    ],
+    "required_reviews_complete": true,
+    "artifact_status": "persisted",
+    "durable_receipt_present": true,
+    "optional_source_state": "available"
+  },
+  "cases": [
+    {
+      "case_id": "all-gates-pass-at-threshold",
+      "overrides": {},
+      "claimed_status": "complete",
+      "expected_status": "complete",
+      "expect_valid": true,
+      "expected_quality_flags": []
+    },
+    {
+      "case_id": "equivalent-fallback-passes",
+      "overrides": {
+        "required_source_states": [
+          "available",
+          "equivalent_fallback",
+          "available"
+        ]
+      },
+      "claimed_status": "complete",
+      "expected_status": "complete",
+      "expect_valid": true,
+      "expected_quality_flags": [
+        "EQUIVALENT_FALLBACK_USED"
+      ]
+    },
+    {
+      "case_id": "optional-source-unavailable-does-not-block",
+      "overrides": {
+        "optional_source_state": "unavailable"
+      },
+      "claimed_status": "complete",
+      "expected_status": "complete",
+      "expect_valid": true,
+      "expected_quality_flags": [
+        "OPTIONAL_SOURCE_UNAVAILABLE"
+      ]
+    },
+    {
+      "case_id": "one-coverage-gap",
+      "overrides": {
+        "observed": 9,
+        "percent": 90.0,
+        "gap_count": 1
+      },
+      "claimed_status": "provisional",
+      "expected_status": "provisional",
+      "expect_valid": true,
+      "expected_quality_flags": [
+        "INCOMPLETE_COVERAGE"
+      ]
+    },
+    {
+      "case_id": "known-empty-universe",
+      "overrides": {
+        "expected": 0,
+        "observed": 0,
+        "percent": 0.0
+      },
+      "claimed_status": "provisional",
+      "expected_status": "provisional",
+      "expect_valid": true,
+      "expected_quality_flags": [
+        "EMPTY_ELIGIBLE_UNIVERSE"
+      ]
+    },
+    {
+      "case_id": "coverage-denominator-unknown",
+      "overrides": {
+        "denominator_known": false,
+        "expected": 0,
+        "observed": 0,
+        "percent": 0.0,
+        "gap_count": null
+      },
+      "claimed_status": "provisional",
+      "expected_status": "provisional",
+      "expect_valid": true,
+      "expected_quality_flags": [
+        "COVERAGE_DENOMINATOR_UNKNOWN"
+      ]
+    },
+    {
+      "case_id": "aggregate-freshness-stale",
+      "overrides": {
+        "freshness_status": "stale",
+        "freshness_age_hours": 25.0
+      },
+      "claimed_status": "provisional",
+      "expected_status": "provisional",
+      "expect_valid": true,
+      "expected_quality_flags": [
+        "FRESHNESS_STALE"
+      ]
+    },
+    {
+      "case_id": "aggregate-freshness-unknown",
+      "overrides": {
+        "freshness_status": "unknown",
+        "freshness_age_hours": null,
+        "required_source_states": [
+          "available",
+          "available",
+          "unavailable"
+        ]
+      },
+      "claimed_status": "degraded",
+      "expected_status": "degraded",
+      "expect_valid": true,
+      "expected_quality_flags": [
+        "FRESHNESS_UNKNOWN",
+        "REQUIRED_SOURCE_UNAVAILABLE"
+      ]
+    },
+    {
+      "case_id": "required-source-stale",
+      "overrides": {
+        "freshness_status": "stale",
+        "freshness_age_hours": 25.0,
+        "required_source_states": [
+          "available",
+          "available",
+          "stale"
+        ]
+      },
+      "claimed_status": "provisional",
+      "expected_status": "provisional",
+      "expect_valid": true,
+      "expected_quality_flags": [
+        "FRESHNESS_STALE",
+        "REQUIRED_SOURCE_STALE"
+      ]
+    },
+    {
+      "case_id": "required-reviews-incomplete",
+      "overrides": {
+        "required_reviews_complete": false
+      },
+      "claimed_status": "provisional",
+      "expected_status": "provisional",
+      "expect_valid": true,
+      "expected_quality_flags": [
+        "REQUIRED_REVIEWS_INCOMPLETE"
+      ]
+    },
+    {
+      "case_id": "persistence-not-attempted",
+      "overrides": {
+        "artifact_status": "not_attempted",
+        "durable_receipt_present": false
+      },
+      "claimed_status": "provisional",
+      "expected_status": "provisional",
+      "expect_valid": true,
+      "expected_quality_flags": [
+        "DURABLE_PERSISTENCE_NOT_ATTEMPTED"
+      ]
+    },
+    {
+      "case_id": "required-period-lag",
+      "overrides": {
+        "required_period_lag": 1
+      },
+      "claimed_status": "provisional",
+      "expected_status": "provisional",
+      "expect_valid": true,
+      "expected_quality_flags": [
+        "REQUIRED_PERIOD_LAG"
+      ]
+    },
+    {
+      "case_id": "required-period-lag-unknown",
+      "overrides": {
+        "required_period_lag_known": false,
+        "required_period_lag": null
+      },
+      "claimed_status": "provisional",
+      "expected_status": "provisional",
+      "expect_valid": true,
+      "expected_quality_flags": [
+        "REQUIRED_PERIOD_UNKNOWN"
+      ]
+    },
+    {
+      "case_id": "non-equivalent-required-fallback",
+      "overrides": {
+        "required_source_states": [
+          "available",
+          "non_equivalent_fallback",
+          "available"
+        ]
+      },
+      "claimed_status": "degraded",
+      "expected_status": "degraded",
+      "expect_valid": true,
+      "expected_quality_flags": [
+        "NON_EQUIVALENT_FALLBACK"
+      ]
+    },
+    {
+      "case_id": "required-source-unavailable",
+      "overrides": {
+        "required_source_states": [
+          "available",
+          "unavailable",
+          "available"
+        ]
+      },
+      "claimed_status": "degraded",
+      "expected_status": "degraded",
+      "expect_valid": true,
+      "expected_quality_flags": [
+        "REQUIRED_SOURCE_UNAVAILABLE"
+      ]
+    },
+    {
+      "case_id": "durable-persistence-failed",
+      "overrides": {
+        "artifact_status": "failed",
+        "durable_receipt_present": false
+      },
+      "claimed_status": "degraded",
+      "expected_status": "degraded",
+      "expect_valid": true,
+      "expected_quality_flags": [
+        "DURABLE_PERSISTENCE_FAILED"
+      ]
+    },
+    {
+      "case_id": "no-reliable-product-precedence",
+      "overrides": {
+        "reliable_product": false,
+        "required_source_states": [
+          "unavailable",
+          "unavailable",
+          "unavailable"
+        ],
+        "artifact_status": "failed",
+        "durable_receipt_present": false
+      },
+      "claimed_status": "failed",
+      "expected_status": "failed",
+      "expect_valid": true,
+      "expected_quality_flags": [
+        "DURABLE_PERSISTENCE_FAILED",
+        "NO_RELIABLE_DECISION_PRODUCT",
+        "REQUIRED_SOURCE_UNAVAILABLE"
+      ]
+    },
+    {
+      "case_id": "invalid-complete-with-gap",
+      "overrides": {
+        "observed": 9,
+        "percent": 90.0,
+        "gap_count": 1
+      },
+      "claimed_status": "complete",
+      "expected_status": "provisional",
+      "expect_valid": false,
+      "expected_error": "CLAIMED_STATUS_MISMATCH",
+      "expected_quality_flags": [
+        "INCOMPLETE_COVERAGE"
+      ]
+    },
+    {
+      "case_id": "invalid-provisional-with-persistence-failure",
+      "overrides": {
+        "artifact_status": "failed",
+        "durable_receipt_present": false
+      },
+      "claimed_status": "provisional",
+      "expected_status": "degraded",
+      "expect_valid": false,
+      "expected_error": "CLAIMED_STATUS_MISMATCH",
+      "expected_quality_flags": [
+        "DURABLE_PERSISTENCE_FAILED"
+      ]
+    },
+    {
+      "case_id": "invalid-degraded-without-reliable-product",
+      "overrides": {
+        "reliable_product": false
+      },
+      "claimed_status": "degraded",
+      "expected_status": "failed",
+      "expect_valid": false,
+      "expected_error": "CLAIMED_STATUS_MISMATCH",
+      "expected_quality_flags": [
+        "NO_RELIABLE_DECISION_PRODUCT"
+      ]
+    },
+    {
+      "case_id": "invalid-provisional-when-all-gates-pass",
+      "overrides": {},
+      "claimed_status": "provisional",
+      "expected_status": "complete",
+      "expect_valid": false,
+      "expected_error": "CLAIMED_STATUS_MISMATCH",
+      "expected_quality_flags": []
+    },
+    {
+      "case_id": "invalid-degraded-from-optional-source-only",
+      "overrides": {
+        "optional_source_state": "unavailable"
+      },
+      "claimed_status": "degraded",
+      "expected_status": "complete",
+      "expect_valid": false,
+      "expected_error": "CLAIMED_STATUS_MISMATCH",
+      "expected_quality_flags": [
+        "OPTIONAL_SOURCE_UNAVAILABLE"
+      ]
+    }
+  ]
+}

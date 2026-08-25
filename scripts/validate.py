@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import json
+import math
 import re
 import subprocess
 import sys
@@ -42,11 +43,13 @@ REQUIRED_FILES = {
     "docs/decisions/0003-deterministic-universe-completion-gates.md",
     "docs/decisions/0004-verifiable-idea-lineage.md",
     "docs/decisions/0005-v1-schema-compatibility-gate.md",
+    "docs/decisions/0006-deterministic-report-acceptance.md",
     "docs/decisions/README.md",
     "docs/contract-vocabulary.md",
     "docs/idea-lineage-metrics.md",
     "docs/operating-model.md",
     "docs/public-private-boundary.md",
+    "docs/report-acceptance-gates.md",
     "docs/schema-compatibility-policy.md",
     "docs/specification-inventory.md",
     "docs/universe-completion-gates.md",
@@ -58,6 +61,8 @@ REQUIRED_FILES = {
     "examples/synthetic/investment-idea-repeat-unchanged.json",
     "examples/synthetic/investment-idea-stale-repeat.json",
     "examples/synthetic/investment-idea-unverified-lineage.json",
+    "examples/synthetic/report-acceptance-cases.json",
+    "examples/synthetic/report-manifest-legacy-1.0.json",
     "examples/synthetic/report-manifest.json",
     "examples/synthetic/universe-completion-cases.json",
     "requirements-validation.txt",
@@ -70,6 +75,7 @@ REQUIRED_FILES = {
     "templates/decision-record.md",
     "tests/compatibility/v1-fixtures.json",
     "tests/schema_helpers.py",
+    "tests/test_report_acceptance.py",
     "tests/test_schema_compatibility.py",
     "tests/test_schema_validation.py",
 }
@@ -106,6 +112,9 @@ FORBIDDEN_SUFFIXES = {
 
 MARKDOWN_LINK = re.compile(r"(?<!!)\[[^\]]+\]\(([^)]+)\)")
 CONFLICT_MARKERS = ("<<<<<<<", "=======", ">>>>>>>")
+UTC_TIMESTAMP_TEXT = re.compile(
+    r"\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?Z\Z"
+)
 
 
 def tracked_files() -> list[Path]:
@@ -127,24 +136,30 @@ def tracked_files() -> list[Path]:
 
 
 def parse_utc_timestamp(value: object, location: str, errors: list[str]) -> None:
-    if not isinstance(value, str) or not value.endswith("Z"):
+    if not isinstance(value, str) or not UTC_TIMESTAMP_TEXT.fullmatch(value):
         errors.append(f"{location}: timestamp must be a UTC string ending in Z")
         return
 
     try:
-        datetime.fromisoformat(value.replace("Z", "+00:00"))
+        parsed = datetime.fromisoformat(value[:-1] + "+00:00")
     except ValueError:
         errors.append(f"{location}: invalid ISO-8601 timestamp {value!r}")
+        return
+    if parsed.utcoffset() is None or parsed.utcoffset().total_seconds() != 0:
+        errors.append(f"{location}: timestamp must use UTC")
 
 
 def walk_timestamps(value: object, location: str, errors: list[str]) -> None:
     timestamp_keys = {
+        "checked_at",
         "data_as_of",
         "first_seen_at",
         "generated_at",
         "last_seen_at",
         "last_material_change_at",
+        "membership_as_of",
         "oldest_material_source_as_of",
+        "persisted_at",
         "recorded_at",
         "retrieved_at",
         "review_by",
@@ -213,10 +228,18 @@ def validate_public_path(path: Path, errors: list[str]) -> None:
 
 
 def load_json(path: Path, errors: list[str]) -> object | None:
+    def reject_non_finite_constant(value: str) -> object:
+        raise ValueError(f"non-finite numeric constant {value}")
+
     try:
-        return json.loads((ROOT / path).read_text(encoding="utf-8"))
+        return json.loads(
+            (ROOT / path).read_text(encoding="utf-8"),
+            parse_constant=reject_non_finite_constant,
+        )
     except json.JSONDecodeError as exc:
         errors.append(f"{path}:{exc.lineno}:{exc.colno}: invalid JSON: {exc.msg}")
+    except ValueError as exc:
+        errors.append(f"{path}: invalid JSON: {exc}")
     return None
 
 
@@ -303,6 +326,7 @@ def validate_json_schema_examples(
                 )
 
     exempt_fixture_paths = {
+        Path("examples/synthetic/report-acceptance-cases.json"),
         Path("examples/synthetic/universe-completion-cases.json"),
     }
     all_synthetic_json = {
@@ -374,6 +398,451 @@ COMPLETION_CASE_KEYS = {
 
 def is_non_negative_int(value: object) -> bool:
     return isinstance(value, int) and not isinstance(value, bool) and value >= 0
+
+
+def is_finite_number(value: object) -> bool:
+    if isinstance(value, bool):
+        return False
+    if isinstance(value, int):
+        return True
+    return isinstance(value, float) and math.isfinite(value)
+
+
+def is_percentage(value: object) -> bool:
+    return is_finite_number(value) and 0 <= value <= 100
+
+
+def exceeds_threshold(value: float, threshold: object) -> bool:
+    return is_finite_number(threshold) and value > threshold
+
+
+ACCEPTANCE_SOURCE_STATES = {
+    "available",
+    "equivalent_fallback",
+    "stale",
+    "non_equivalent_fallback",
+    "unavailable",
+}
+
+ACCEPTANCE_OPTIONAL_SOURCE_STATES = {
+    "available",
+    "fallback",
+    "stale",
+    "unavailable",
+}
+
+ACCEPTANCE_FRESHNESS_STATES = {"fresh", "stale", "unknown"}
+ACCEPTANCE_ARTIFACT_STATES = {"persisted", "failed", "not_attempted"}
+OPAQUE_DURABLE_REFERENCE = re.compile(r"[A-Za-z0-9][A-Za-z0-9._-]{7,127}\Z")
+
+ACCEPTANCE_INPUT_KEYS = {
+    "artifact_status",
+    "denominator_known",
+    "durable_receipt_present",
+    "expected",
+    "freshness_age_hours",
+    "freshness_status",
+    "freshness_threshold_hours",
+    "gap_count",
+    "observed",
+    "optional_source_state",
+    "percent",
+    "reliable_product",
+    "required_period_lag",
+    "required_period_lag_known",
+    "required_reviews_complete",
+    "required_source_states",
+}
+
+ACCEPTANCE_QUALITY_FLAGS = {
+    "COVERAGE_DENOMINATOR_UNKNOWN",
+    "DURABLE_PERSISTENCE_FAILED",
+    "DURABLE_PERSISTENCE_NOT_ATTEMPTED",
+    "EMPTY_ELIGIBLE_UNIVERSE",
+    "EQUIVALENT_FALLBACK_USED",
+    "FRESHNESS_STALE",
+    "FRESHNESS_UNKNOWN",
+    "INCOMPLETE_COVERAGE",
+    "NON_EQUIVALENT_FALLBACK",
+    "NO_RELIABLE_DECISION_PRODUCT",
+    "OPTIONAL_SOURCE_UNAVAILABLE",
+    "REQUIRED_PERIOD_LAG",
+    "REQUIRED_PERIOD_UNKNOWN",
+    "REQUIRED_REVIEWS_INCOMPLETE",
+    "REQUIRED_SOURCE_STALE",
+    "REQUIRED_SOURCE_UNAVAILABLE",
+}
+
+
+def materialize_report_acceptance_case(
+    defaults: dict[str, object], case: dict[str, object]
+) -> dict[str, object]:
+    """Apply one synthetic case's explicit overrides to the public defaults."""
+
+    effective = dict(defaults)
+    overrides = case.get("overrides")
+    if isinstance(overrides, dict):
+        effective.update(overrides)
+    return effective
+
+
+def derive_report_acceptance_status(
+    inputs: dict[str, object],
+) -> tuple[str, set[str]]:
+    """Derive report status and required quality flags using safety-first precedence."""
+
+    flags: set[str] = set()
+    required_source_states = inputs.get("required_source_states")
+    states = (
+        {state for state in required_source_states if isinstance(state, str)}
+        if isinstance(required_source_states, list)
+        else set()
+    )
+
+    reliable_product = inputs.get("reliable_product") is True
+    denominator_known = inputs.get("denominator_known") is True
+    expected = inputs.get("expected")
+    observed = inputs.get("observed")
+    percent = inputs.get("percent")
+    gap_count = inputs.get("gap_count")
+    required_period_lag = inputs.get("required_period_lag")
+    required_period_lag_known = inputs.get("required_period_lag_known") is True
+    freshness_status = inputs.get("freshness_status")
+    required_reviews_complete = inputs.get("required_reviews_complete") is True
+    artifact_status = inputs.get("artifact_status")
+
+    if not reliable_product:
+        flags.add("NO_RELIABLE_DECISION_PRODUCT")
+
+    if "unavailable" in states:
+        flags.add("REQUIRED_SOURCE_UNAVAILABLE")
+    if "non_equivalent_fallback" in states:
+        flags.add("NON_EQUIVALENT_FALLBACK")
+    if "stale" in states:
+        flags.add("REQUIRED_SOURCE_STALE")
+    if "equivalent_fallback" in states:
+        flags.add("EQUIVALENT_FALLBACK_USED")
+
+    coverage_passes = False
+    if not denominator_known:
+        flags.add("COVERAGE_DENOMINATOR_UNKNOWN")
+    elif expected == 0:
+        flags.add("EMPTY_ELIGIBLE_UNIVERSE")
+    elif (
+        is_non_negative_int(expected)
+        and is_non_negative_int(observed)
+        and observed == expected
+        and is_percentage(percent)
+        and abs(float(percent) - 100.0) <= 0.01
+        and gap_count == 0
+    ):
+        coverage_passes = True
+    else:
+        flags.add("INCOMPLETE_COVERAGE")
+
+    if not required_period_lag_known:
+        flags.add("REQUIRED_PERIOD_UNKNOWN")
+    elif required_period_lag != 0:
+        flags.add("REQUIRED_PERIOD_LAG")
+
+    if freshness_status == "stale":
+        flags.add("FRESHNESS_STALE")
+    elif freshness_status == "unknown":
+        flags.add("FRESHNESS_UNKNOWN")
+
+    if not required_reviews_complete:
+        flags.add("REQUIRED_REVIEWS_INCOMPLETE")
+
+    if artifact_status == "failed":
+        flags.add("DURABLE_PERSISTENCE_FAILED")
+    elif artifact_status == "not_attempted":
+        flags.add("DURABLE_PERSISTENCE_NOT_ATTEMPTED")
+
+    if inputs.get("optional_source_state") == "unavailable":
+        flags.add("OPTIONAL_SOURCE_UNAVAILABLE")
+
+    if not reliable_product:
+        status = "failed"
+    elif (
+        "unavailable" in states
+        or "non_equivalent_fallback" in states
+        or artifact_status == "failed"
+    ):
+        status = "degraded"
+    elif (
+        not coverage_passes
+        or not required_period_lag_known
+        or required_period_lag != 0
+        or freshness_status != "fresh"
+        or "stale" in states
+        or not required_reviews_complete
+        or artifact_status != "persisted"
+    ):
+        status = "provisional"
+    else:
+        status = "complete"
+
+    return status, flags
+
+
+def validate_report_acceptance_input_shape(
+    value: object, location: str, errors: list[str]
+) -> None:
+    require_keys(value, ACCEPTANCE_INPUT_KEYS, location, errors)
+    if not isinstance(value, dict):
+        return
+
+    for key in (
+        "denominator_known",
+        "durable_receipt_present",
+        "reliable_product",
+        "required_period_lag_known",
+        "required_reviews_complete",
+    ):
+        if not isinstance(value.get(key), bool):
+            errors.append(f"{location}.{key}: expected a boolean")
+
+    for key in ("expected", "observed"):
+        if not is_non_negative_int(value.get(key)):
+            errors.append(f"{location}.{key}: expected a non-negative integer")
+
+    denominator_known = value.get("denominator_known")
+    gap_count = value.get("gap_count")
+    if denominator_known is True:
+        if not is_non_negative_int(gap_count):
+            errors.append(f"{location}.gap_count: expected a non-negative integer when known")
+    elif denominator_known is False and gap_count is not None:
+        errors.append(f"{location}.gap_count: expected null when denominator is unknown")
+
+    required_period_lag_known = value.get("required_period_lag_known")
+    required_period_lag = value.get("required_period_lag")
+    if required_period_lag_known is True:
+        if not is_non_negative_int(required_period_lag):
+            errors.append(
+                f"{location}.required_period_lag: expected a non-negative integer when known"
+            )
+    elif required_period_lag_known is False:
+        if required_period_lag is not None:
+            errors.append(
+                f"{location}.required_period_lag: expected null when lag is unknown"
+            )
+
+    percent = value.get("percent")
+    if not is_percentage(percent):
+        errors.append(f"{location}.percent: expected a finite number from 0 to 100")
+
+    threshold = value.get("freshness_threshold_hours")
+    if (
+        not is_finite_number(threshold)
+        or threshold <= 0
+    ):
+        errors.append(
+            f"{location}.freshness_threshold_hours: expected a positive number"
+        )
+
+    freshness_status = value.get("freshness_status")
+    freshness_age = value.get("freshness_age_hours")
+    if (
+        not isinstance(freshness_status, str)
+        or freshness_status not in ACCEPTANCE_FRESHNESS_STATES
+    ):
+        errors.append(f"{location}.freshness_status: invalid state")
+    elif freshness_status == "unknown":
+        if freshness_age is not None:
+            errors.append(
+                f"{location}.freshness_age_hours: unknown freshness requires null age"
+            )
+    elif (
+        not is_finite_number(freshness_age)
+        or freshness_age < 0
+    ):
+        errors.append(
+            f"{location}.freshness_age_hours: expected a non-negative number"
+        )
+    elif (
+        freshness_status == "fresh"
+        and isinstance(threshold, (int, float))
+        and not isinstance(threshold, bool)
+        and exceeds_threshold(freshness_age, threshold)
+    ):
+        errors.append(f"{location}: fresh label exceeds its declared threshold")
+
+    source_states = value.get("required_source_states")
+    if (
+        not isinstance(source_states, list)
+        or len(source_states) != 3
+        or any(
+            not isinstance(state, str) or state not in ACCEPTANCE_SOURCE_STATES
+            for state in source_states
+        )
+    ):
+        errors.append(
+            f"{location}.required_source_states: expected three valid role states"
+        )
+
+    optional_source_state = value.get("optional_source_state")
+    if (
+        not isinstance(optional_source_state, str)
+        or optional_source_state not in ACCEPTANCE_OPTIONAL_SOURCE_STATES
+    ):
+        errors.append(f"{location}.optional_source_state: invalid state")
+    artifact_status = value.get("artifact_status")
+    if (
+        not isinstance(artifact_status, str)
+        or artifact_status not in ACCEPTANCE_ARTIFACT_STATES
+    ):
+        errors.append(f"{location}.artifact_status: invalid state")
+
+    expected = value.get("expected")
+    observed = value.get("observed")
+    gap_count = value.get("gap_count")
+    if is_non_negative_int(expected) and is_non_negative_int(observed):
+        counts_are_ordered = observed <= expected
+        if not counts_are_ordered:
+            errors.append(f"{location}: observed exceeds expected")
+        calculated = (
+            0.0
+            if expected == 0
+            else observed / expected * 100
+            if counts_are_ordered
+            else None
+        )
+        if (
+            calculated is not None
+            and is_percentage(percent)
+            and abs(float(percent) - calculated) > 0.01
+        ):
+            errors.append(f"{location}: percent does not match coverage counts")
+        if (
+            denominator_known is True
+            and is_non_negative_int(gap_count)
+            and gap_count != expected - observed
+        ):
+            errors.append(f"{location}: gap_count does not match coverage counts")
+
+    receipt_present = value.get("durable_receipt_present")
+    if artifact_status == "persisted" and receipt_present is not True:
+        errors.append(f"{location}: persisted requires a durable receipt")
+    if artifact_status in ("failed", "not_attempted") and receipt_present is not False:
+        errors.append(f"{location}: non-persisted outcomes cannot claim a receipt")
+
+
+def validate_report_acceptance_cases(value: object, errors: list[str]) -> None:
+    path = Path("examples/synthetic/report-acceptance-cases.json")
+    location = str(path)
+    require_keys(value, {"spec_version", "defaults", "cases"}, location, errors)
+    if not isinstance(value, dict):
+        return
+
+    if value.get("spec_version") != "1.0.0":
+        errors.append(f"{location}.spec_version: expected 1.0.0")
+
+    defaults = value.get("defaults")
+    validate_report_acceptance_input_shape(
+        defaults, f"{location}.defaults", errors
+    )
+    if not isinstance(defaults, dict):
+        return
+
+    cases = value.get("cases")
+    if not isinstance(cases, list) or not cases:
+        errors.append(f"{location}.cases: expected a non-empty array")
+        return
+
+    seen_ids: set[str] = set()
+    covered_statuses: set[str] = set()
+    for index, case in enumerate(cases):
+        case_location = f"{location}.cases[{index}]"
+        require_keys(
+            case,
+            {
+                "case_id",
+                "claimed_status",
+                "expect_valid",
+                "expected_quality_flags",
+                "expected_status",
+                "overrides",
+            },
+            case_location,
+            errors,
+        )
+        if not isinstance(case, dict):
+            continue
+
+        case_id = case.get("case_id")
+        if not isinstance(case_id, str) or not case_id:
+            errors.append(f"{case_location}.case_id: expected a non-empty string")
+        elif case_id in seen_ids:
+            errors.append(f"{case_location}.case_id: duplicate case ID {case_id}")
+        else:
+            seen_ids.add(case_id)
+
+        overrides = case.get("overrides")
+        if not isinstance(overrides, dict):
+            errors.append(f"{case_location}.overrides: expected an object")
+            continue
+        unknown_overrides = sorted(overrides.keys() - ACCEPTANCE_INPUT_KEYS)
+        if unknown_overrides:
+            errors.append(
+                f"{case_location}.overrides: unknown keys {', '.join(unknown_overrides)}"
+            )
+
+        effective = materialize_report_acceptance_case(defaults, case)
+        before_shape_errors = len(errors)
+        validate_report_acceptance_input_shape(
+            effective, f"{case_location}.effective", errors
+        )
+        if len(errors) != before_shape_errors:
+            continue
+
+        derived_status, derived_flags = derive_report_acceptance_status(effective)
+        covered_statuses.add(derived_status)
+        if case.get("expected_status") != derived_status:
+            errors.append(
+                f"{case_location}.expected_status: expected derived {derived_status}"
+            )
+
+        expected_flags = case.get("expected_quality_flags")
+        if (
+            not isinstance(expected_flags, list)
+            or any(
+                not isinstance(flag, str) or flag not in ACCEPTANCE_QUALITY_FLAGS
+                for flag in expected_flags
+            )
+            or len(set(expected_flags)) != len(expected_flags)
+        ):
+            errors.append(
+                f"{case_location}.expected_quality_flags: invalid or duplicate flags"
+            )
+        elif set(expected_flags) != derived_flags:
+            errors.append(
+                f"{case_location}.expected_quality_flags: does not match derived flags"
+            )
+
+        claimed_status = case.get("claimed_status")
+        if (
+            not isinstance(claimed_status, str)
+            or claimed_status not in COMPLETION_STATUSES
+        ):
+            errors.append(f"{case_location}.claimed_status: invalid status")
+            continue
+        claim_mismatch = claimed_status != derived_status
+        if case.get("expect_valid") is True and claim_mismatch:
+            errors.append(f"{case_location}: valid case contradicts derived status")
+        elif case.get("expect_valid") is False:
+            if not claim_mismatch:
+                errors.append(
+                    f"{case_location}: negative case must contradict derived status"
+                )
+            if case.get("expected_error") != "CLAIMED_STATUS_MISMATCH":
+                errors.append(
+                    f"{case_location}.expected_error: expected CLAIMED_STATUS_MISMATCH"
+                )
+        elif not isinstance(case.get("expect_valid"), bool):
+            errors.append(f"{case_location}.expect_valid: expected a boolean")
+
+    if covered_statuses != COMPLETION_STATUSES:
+        errors.append(f"{location}: truth table must derive all four report statuses")
 
 
 def derive_completion_status(case: dict[str, object]) -> str:
@@ -584,18 +1053,359 @@ LINEAGE_DIMENSIONS = {
 
 
 def timestamp_value(value: object) -> datetime | None:
-    if not isinstance(value, str) or not value.endswith("Z"):
+    if not isinstance(value, str) or not UTC_TIMESTAMP_TEXT.fullmatch(value):
         return None
     try:
-        return datetime.fromisoformat(value.replace("Z", "+00:00"))
+        parsed = datetime.fromisoformat(value[:-1] + "+00:00")
     except ValueError:
         return None
+    if parsed.utcoffset() is None or parsed.utcoffset().total_seconds() != 0:
+        return None
+    return parsed
 
 
 def percent_or_none(numerator: int, denominator: int) -> float | None:
     if denominator == 0:
         return None
     return numerator / denominator * 100
+
+
+def validate_report_manifest_acceptance(
+    report: object, path: Path, errors: list[str]
+) -> None:
+    """Validate report-manifest 1.1 gate joins, clocks, flags, and derived status."""
+
+    location = str(path)
+    if not isinstance(report, dict) or report.get("schema_version") != "1.1.0":
+        return
+
+    coverage = report.get("coverage")
+    freshness = report.get("freshness")
+    sources = report.get("sources")
+    artifact = report.get("artifact")
+    gate_inputs = report.get("gate_inputs")
+    if not all(
+        isinstance(value, dict)
+        for value in (coverage, freshness, artifact, gate_inputs)
+    ) or not isinstance(sources, list):
+        return
+
+    status_reason = report.get("status_reason")
+    if not isinstance(status_reason, str) or not status_reason.strip():
+        errors.append(f"{location}.status_reason: expected non-whitespace text")
+    coverage_universe = coverage.get("universe")
+    if not isinstance(coverage_universe, str) or not coverage_universe.strip():
+        errors.append(f"{location}.coverage.universe: expected non-whitespace text")
+
+    generated_at = timestamp_value(report.get("generated_at"))
+    data_as_of = timestamp_value(report.get("data_as_of"))
+    if generated_at is None:
+        errors.append(f"{location}.generated_at: invalid UTC timestamp")
+    if data_as_of is None:
+        errors.append(f"{location}.data_as_of: invalid UTC timestamp")
+    if generated_at and data_as_of and data_as_of > generated_at:
+        errors.append(f"{location}: data_as_of cannot be after generated_at")
+
+    denominator_known = gate_inputs.get("denominator_known")
+    required_period = gate_inputs.get("required_period")
+    if not isinstance(required_period, str) or not required_period.strip():
+        errors.append(f"{location}.gate_inputs.required_period: expected non-whitespace text")
+    membership_as_of = timestamp_value(gate_inputs.get("membership_as_of"))
+    if "membership_as_of" in gate_inputs and membership_as_of is None:
+        errors.append(f"{location}.gate_inputs.membership_as_of: invalid UTC timestamp")
+    if generated_at and membership_as_of and membership_as_of > generated_at:
+        errors.append(f"{location}: membership_as_of cannot be after generated_at")
+    if data_as_of and membership_as_of and membership_as_of > data_as_of:
+        errors.append(f"{location}: membership_as_of cannot be after data_as_of")
+
+    gap_count = gate_inputs.get("gap_count")
+    coverage_gaps = coverage.get("gaps")
+    nonblank_gap_descriptions: list[str] = []
+    if isinstance(coverage_gaps, list):
+        nonblank_gap_descriptions = [
+            gap for gap in coverage_gaps if isinstance(gap, str) and gap.strip()
+        ]
+        if len(nonblank_gap_descriptions) != len(coverage_gaps):
+            errors.append(
+                f"{location}.coverage.gaps: descriptions must contain non-whitespace text"
+            )
+    if denominator_known is False:
+        for field_name in ("membership_as_of", "gap_count"):
+            if field_name in gate_inputs:
+                errors.append(
+                    f"{location}.gate_inputs.{field_name}: omit when denominator is unknown"
+                )
+        if any(
+            coverage.get(field_name) != 0
+            for field_name in ("expected", "observed", "percent")
+        ) or coverage_gaps != []:
+            errors.append(
+                f"{location}.coverage: unknown denominator requires the zero sentinel and no gap descriptions"
+            )
+    elif denominator_known is True and is_non_negative_int(gap_count):
+        if gap_count == 0 and isinstance(coverage_gaps, list) and coverage_gaps:
+            errors.append(
+                f"{location}.coverage.gaps: zero gap_count requires an empty array"
+            )
+        if (
+            gap_count > 0
+            and isinstance(coverage_gaps, list)
+            and not nonblank_gap_descriptions
+        ):
+            errors.append(
+                f"{location}.coverage.gaps: positive gap_count requires a public-safe gap description"
+            )
+
+    source_by_id: dict[str, dict[str, object]] = {}
+    for index, source in enumerate(sources):
+        source_location = f"{location}.sources[{index}]"
+        if not isinstance(source, dict):
+            continue
+        source_id = source.get("source_id")
+        if isinstance(source_id, str):
+            if not source_id.strip():
+                errors.append(f"{source_location}.source_id: expected non-whitespace text")
+            if source_id in source_by_id:
+                errors.append(f"{source_location}.source_id: duplicate source ID")
+            else:
+                source_by_id[source_id] = source
+        source_note = source.get("note")
+        if not isinstance(source_note, str) or not source_note.strip():
+            errors.append(f"{source_location}.note: expected non-whitespace text")
+
+        source_data_as_of = timestamp_value(source.get("data_as_of"))
+        retrieved_at = timestamp_value(source.get("retrieved_at"))
+        checked_at = timestamp_value(source.get("checked_at"))
+        for field_name, field_value in (
+            ("data_as_of", source_data_as_of),
+            ("retrieved_at", retrieved_at),
+            ("checked_at", checked_at),
+        ):
+            if field_name in source and field_value is None:
+                errors.append(
+                    f"{source_location}.{field_name}: invalid UTC timestamp"
+                )
+        if source_data_as_of and retrieved_at and source_data_as_of > retrieved_at:
+            errors.append(
+                f"{source_location}: data_as_of cannot be after retrieved_at"
+            )
+        if retrieved_at and checked_at and retrieved_at > checked_at:
+            errors.append(f"{source_location}: retrieved_at cannot be after checked_at")
+        if data_as_of and source_data_as_of and source_data_as_of > data_as_of:
+            errors.append(f"{source_location}: data_as_of cannot be after report data_as_of")
+        if generated_at and retrieved_at and retrieved_at > generated_at:
+            errors.append(f"{source_location}: retrieved_at cannot be after generated_at")
+        if generated_at and checked_at and checked_at > generated_at:
+            errors.append(f"{source_location}: checked_at cannot be after generated_at")
+
+    freshness_status = freshness.get("status")
+    threshold = freshness.get("threshold_hours")
+    oldest_material = timestamp_value(freshness.get("oldest_material_source_as_of"))
+    if (
+        "oldest_material_source_as_of" in freshness
+        and oldest_material is None
+    ):
+        errors.append(
+            f"{location}.freshness.oldest_material_source_as_of: invalid UTC timestamp"
+        )
+    freshness_age_hours: float | None = None
+    if generated_at and oldest_material:
+        freshness_age_hours = (
+            generated_at - oldest_material
+        ).total_seconds() / 3600
+        if freshness_age_hours < 0:
+            errors.append(
+                f"{location}: oldest material source cannot be after generated_at"
+            )
+        if (
+            freshness_status == "fresh"
+            and is_finite_number(threshold)
+            and exceeds_threshold(freshness_age_hours, threshold)
+        ):
+            errors.append(f"{location}: fresh label exceeds its declared threshold")
+
+    artifact_status = artifact.get("status")
+    artifact_note = artifact.get("note")
+    if not isinstance(artifact_note, str) or not artifact_note.strip():
+        errors.append(f"{location}.artifact.note: expected non-whitespace text")
+    persisted_at = timestamp_value(artifact.get("persisted_at"))
+    if "persisted_at" in artifact and persisted_at is None:
+        errors.append(f"{location}.artifact.persisted_at: invalid UTC timestamp")
+    if generated_at and persisted_at and persisted_at < generated_at:
+        errors.append(f"{location}: persisted_at cannot be before generated_at")
+    durable_reference = artifact.get("durable_reference")
+    durable_reference_is_opaque = bool(
+        isinstance(durable_reference, str)
+        and OPAQUE_DURABLE_REFERENCE.fullmatch(durable_reference)
+    )
+    if isinstance(durable_reference, str) and not durable_reference_is_opaque:
+        errors.append(
+            f"{location}.artifact.durable_reference: expected an opaque receipt, not a URL or path"
+        )
+
+    roles = gate_inputs.get("source_roles")
+    required_states: list[object] = []
+    referenced_source_ids: set[str] = set()
+    role_states: dict[str, object] = {}
+    raw_status_for_role_state = {
+        "available": "available",
+        "equivalent_fallback": "fallback",
+        "stale": "stale",
+        "non_equivalent_fallback": "fallback",
+        "unavailable": "unavailable",
+    }
+    if isinstance(roles, list):
+        for index, role in enumerate(roles):
+            role_location = f"{location}.gate_inputs.source_roles[{index}]"
+            if not isinstance(role, dict):
+                continue
+            role_name = role.get("role")
+            state = role.get("state")
+            role_note = role.get("note")
+            if not isinstance(role_note, str) or not role_note.strip():
+                errors.append(f"{role_location}.note: expected non-whitespace text")
+            required_states.append(state)
+            if isinstance(role_name, str):
+                if role_name in role_states:
+                    errors.append(f"{role_location}.role: duplicate required role")
+                else:
+                    role_states[role_name] = state
+            source_ids = role.get("source_ids")
+            if not isinstance(source_ids, list):
+                continue
+
+            linked_statuses: list[str] = []
+            for source_id in source_ids:
+                if isinstance(source_id, str) and not source_id.strip():
+                    errors.append(
+                        f"{role_location}.source_ids: expected non-whitespace text"
+                    )
+                if not isinstance(source_id, str) or source_id not in source_by_id:
+                    errors.append(f"{role_location}: dangling source_id {source_id!r}")
+                    continue
+                referenced_source_ids.add(source_id)
+                linked_status = source_by_id[source_id].get("status")
+                if not isinstance(linked_status, str):
+                    errors.append(
+                        f"{role_location}: linked source {source_id!r} has an invalid status"
+                    )
+                    continue
+                linked_statuses.append(linked_status)
+
+            expected_raw_status = (
+                raw_status_for_role_state.get(state)
+                if isinstance(state, str)
+                else None
+            )
+            if expected_raw_status and (
+                not linked_statuses
+                or any(status != expected_raw_status for status in linked_statuses)
+            ):
+                errors.append(
+                    f"{role_location}: every linked source must match role state {state!r}"
+                )
+
+    freshness_role_state = role_states.get("freshness_reference")
+    if freshness_role_state == "unavailable" and freshness_status != "unknown":
+        errors.append(
+            f"{location}: unavailable freshness reference requires unknown aggregate freshness"
+        )
+    elif freshness_role_state != "unavailable" and freshness_status == "unknown":
+        errors.append(
+            f"{location}: unknown aggregate freshness requires an unavailable freshness reference"
+        )
+
+    if (
+        freshness_role_state != "unavailable"
+        and "stale" in required_states
+        and freshness_status != "stale"
+    ):
+        errors.append(
+            f"{location}: required stale source role requires stale aggregate freshness"
+        )
+
+    material_times: list[datetime] = []
+    for source_id in referenced_source_ids:
+        source = source_by_id.get(source_id)
+        if not isinstance(source, dict):
+            continue
+        source_status = source.get("status")
+        if not isinstance(source_status, str) or source_status not in {
+            "available",
+            "fallback",
+            "stale",
+        }:
+            continue
+        source_time = timestamp_value(source.get("data_as_of"))
+        if source_time is not None:
+            material_times.append(source_time)
+    if isinstance(freshness_status, str) and freshness_status in ("fresh", "stale"):
+        if not material_times:
+            errors.append(f"{location}: known freshness requires material source times")
+        elif oldest_material != min(material_times):
+            errors.append(
+                f"{location}.freshness.oldest_material_source_as_of: must equal the earliest required-role source time"
+            )
+    elif freshness_status == "unknown" and oldest_material is not None:
+        errors.append(
+            f"{location}: unknown aggregate freshness cannot claim a material source time"
+        )
+
+    optional_source_state = "available"
+    if any(
+        source.get("status") == "unavailable"
+        for source_id, source in source_by_id.items()
+        if source_id not in referenced_source_ids
+    ):
+        optional_source_state = "unavailable"
+
+    normalized = {
+        "artifact_status": artifact_status,
+        "denominator_known": denominator_known,
+        "durable_receipt_present": bool(
+            durable_reference_is_opaque and persisted_at
+        ),
+        "expected": coverage.get("expected"),
+        "freshness_age_hours": freshness_age_hours,
+        "freshness_status": freshness_status,
+        "freshness_threshold_hours": threshold,
+        "gap_count": gap_count,
+        "observed": coverage.get("observed"),
+        "optional_source_state": optional_source_state,
+        "percent": coverage.get("percent"),
+        "reliable_product": gate_inputs.get("reliable_product"),
+        "required_period_lag": gate_inputs.get("required_period_lag"),
+        "required_period_lag_known": gate_inputs.get("required_period_lag_known"),
+        "required_reviews_complete": gate_inputs.get("required_reviews_complete"),
+        "required_source_states": required_states,
+    }
+    validate_report_acceptance_input_shape(
+        normalized, f"{location}.derived_gate_inputs", errors
+    )
+
+    derived_status, derived_flags = derive_report_acceptance_status(normalized)
+    if report.get("status") != derived_status:
+        errors.append(
+            f"{location}.status: claimed {report.get('status')!r}, derived {derived_status!r}"
+        )
+
+    quality_flags = report.get("quality_flags")
+    if isinstance(quality_flags, list):
+        known_flags = {
+            flag
+            for flag in quality_flags
+            if isinstance(flag, str) and flag in ACCEPTANCE_QUALITY_FLAGS
+        }
+        missing_flags = sorted(derived_flags - known_flags)
+        contradictory_flags = sorted(known_flags - derived_flags)
+        if missing_flags:
+            errors.append(
+                f"{location}.quality_flags: missing derived flags {', '.join(missing_flags)}"
+            )
+        if contradictory_flags:
+            errors.append(
+                f"{location}.quality_flags: contradictory flags {', '.join(contradictory_flags)}"
+            )
 
 
 def validate_idea_fixture(
@@ -726,12 +1536,17 @@ def validate_idea_fixture(
 
 def validate_examples(parsed: dict[Path, object], errors: list[str]) -> None:
     report_path = Path("examples/synthetic/report-manifest.json")
+    legacy_report_path = Path("examples/synthetic/report-manifest-legacy-1.0.json")
+    acceptance_path = Path("examples/synthetic/report-acceptance-cases.json")
     primary_idea_path = Path("examples/synthetic/investment-idea.json")
     legacy_idea_path = Path("examples/synthetic/investment-idea-legacy-1.0.json")
     decision_path = Path("examples/synthetic/decision-record.json")
     completion_path = Path("examples/synthetic/universe-completion-cases.json")
+    compatibility_path = Path("tests/compatibility/v1-fixtures.json")
 
     report = parsed.get(report_path)
+    legacy_report = parsed.get(legacy_report_path)
+    acceptance = parsed.get(acceptance_path)
     decision = parsed.get(decision_path)
     completion = parsed.get(completion_path)
     idea_paths = sorted(
@@ -751,6 +1566,7 @@ def validate_examples(parsed: dict[Path, object], errors: list[str]) -> None:
             "data_as_of",
             "decision_ids",
             "freshness",
+            "gate_inputs",
             "generated_at",
             "idea_ids",
             "quality_flags",
@@ -785,11 +1601,23 @@ def validate_examples(parsed: dict[Path, object], errors: list[str]) -> None:
         errors,
     )
 
-    for path, value in [(report_path, report), (decision_path, decision), *ideas]:
+    for path, value in [
+        (report_path, report),
+        (legacy_report_path, legacy_report),
+        (decision_path, decision),
+        *ideas,
+    ]:
         walk_timestamps(value, str(path), errors)
 
-    if isinstance(report, dict) and report.get("schema_version") != "1.0.0":
-        errors.append(f"{report_path}: synthetic report must use schema version 1.0.0")
+    if isinstance(report, dict) and report.get("schema_version") != "1.1.0":
+        errors.append(f"{report_path}: synthetic report must use schema version 1.1.0")
+    if (
+        not isinstance(legacy_report, dict)
+        or legacy_report.get("schema_version") != "1.0.0"
+    ):
+        errors.append(
+            f"{legacy_report_path}: legacy report fixture must preserve schema 1.0.0"
+        )
     if isinstance(decision, dict) and decision.get("schema_version") != "1.0.0":
         errors.append(f"{decision_path}: synthetic decision must use schema version 1.0.0")
 
@@ -991,6 +1819,34 @@ def validate_examples(parsed: dict[Path, object], errors: list[str]) -> None:
     if percent_or_none(0, 0) is not None or percent_or_none(0, 5) != 0.0:
         errors.append("metric zero-denominator behavior is inconsistent")
 
+    for candidate_path, candidate in sorted(parsed.items()):
+        if (
+            candidate_path.parent == Path("examples/synthetic")
+            and candidate_path.name.startswith("report-manifest")
+        ):
+            validate_report_manifest_acceptance(candidate, candidate_path, errors)
+
+    compatibility = parsed.get(compatibility_path)
+    if isinstance(compatibility, dict):
+        contracts = compatibility.get("contracts")
+        report_contract = (
+            contracts.get("report-manifest") if isinstance(contracts, dict) else None
+        )
+        fixtures = (
+            report_contract.get("fixtures")
+            if isinstance(report_contract, dict)
+            else None
+        )
+        if isinstance(fixtures, list):
+            for index, fixture in enumerate(fixtures):
+                if not isinstance(fixture, dict):
+                    continue
+                validate_report_manifest_acceptance(
+                    fixture.get("instance"),
+                    Path(f"{compatibility_path}::report-manifest[{index}]"),
+                    errors,
+                )
+    validate_report_acceptance_cases(acceptance, errors)
     validate_universe_completion_cases(completion, errors)
 
 

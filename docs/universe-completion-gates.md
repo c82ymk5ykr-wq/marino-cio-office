@@ -92,10 +92,10 @@ For a required role:
 Optional-source problems remain disclosed. They block completion only when a
 required report review depends on them.
 
-When a source has no knowable evidence time, the timestamp is omitted by a
-future compatible contract representation and freshness is `unknown`; a time is
-never fabricated. Until that representation is adopted, the report cannot be
-`complete`.
+In report-manifest 1.1, a source with no knowable evidence time omits evidence
+and retrieval timestamps, retains `checked_at`, and contributes `unknown`
+freshness unless a required-source failure controls status. A time is never
+fabricated. Version 1.0 remains unchanged for compatibility.
 
 ## Review and persistence
 
@@ -121,6 +121,9 @@ Evaluate the gates in this order:
 3. `provisional` if any denominator, coverage, freshness, review, or persistence
    gate is unknown or unmet without a material operational failure.
 4. `complete` only when every declared gate passes.
+
+The full cross-gate derivation and report-manifest 1.1 evidence fields are
+defined in [report acceptance gates](report-acceptance-gates.md).
 
 An unknown denominator is `provisional` when the system otherwise ran. It is
 `degraded` when the denominator is unknown because its required source failed,

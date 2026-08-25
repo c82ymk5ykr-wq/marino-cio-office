@@ -13,7 +13,13 @@ FORMAT_CHECKER = FormatChecker()
 
 
 def load_json(path: str) -> object:
-    return json.loads((ROOT / path).read_text(encoding="utf-8"))
+    def reject_non_finite_constant(value: str) -> object:
+        raise ValueError(f"non-finite numeric constant {value}")
+
+    return json.loads(
+        (ROOT / path).read_text(encoding="utf-8"),
+        parse_constant=reject_non_finite_constant,
+    )
 
 
 def validator_for(path: str) -> Draft202012Validator:

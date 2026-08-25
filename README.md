@@ -48,6 +48,7 @@ See [the public/private boundary](docs/public-private-boundary.md) and
 - [Canonical contract vocabulary](docs/contract-vocabulary.md)
 - [Public specification inventory](docs/specification-inventory.md)
 - [Universe completion gates](docs/universe-completion-gates.md)
+- [Report acceptance gates](docs/report-acceptance-gates.md)
 - [Idea lineage and anti-staleness metrics](docs/idea-lineage-metrics.md)
 - [Schema compatibility policy](docs/schema-compatibility-policy.md)
 - [Report manifest schema](schemas/v1/report-manifest.schema.json)
