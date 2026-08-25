@@ -97,7 +97,7 @@ source.
 | Status | Meaning |
 | --- | --- |
 | `complete` | All required coverage, freshness, source, review, and persistence gates passed |
-| `provisional` | The product is useful, but required coverage or freshness remains incomplete |
+| `provisional` | The product is useful, but a required coverage, freshness, review, or not-attempted persistence gate remains incomplete |
 | `degraded` | A material source or persistence failure occurred; the usable result and failure are both disclosed |
 | `failed` | No reliable decision product could be completed; the manifest still records why |
 
@@ -105,6 +105,8 @@ Status is produced from evidence. It is never a cosmetic label. A broad-universe
 ranking cannot move from provisional to complete solely because a page loaded or
 a scan job ran; expected coverage, observed coverage, source health, freshness,
 and persistence must satisfy the defined gate.
+Report-manifest 1.1 applies the deterministic precedence and serialized evidence
+defined in [report acceptance gates](report-acceptance-gates.md).
 
 ## Required report invariants
 
@@ -113,11 +115,15 @@ Every report manifest must:
 - identify its schema version and stable report ID;
 - separate `generated_at` from the market or source `data_as_of` time;
 - state expected and observed coverage and any known gaps;
-- record freshness and the oldest material source time;
+- record freshness and, when known, the earliest time among required-role
+  source evidence; omit that time when aggregate freshness is unknown;
 - enumerate failed, stale, fallback, and unavailable sources;
 - identify quality flags and unresolved limitations;
 - link the ideas and decisions included in the report;
 - record whether the artifact reached durable private storage;
+- for report-manifest 1.1, record required source-role states, review completion,
+  reliable-product state, whether required-period lag is known, and a
+  non-sensitive opaque persistence receipt token when persisted;
 - complete honestly even if a source or persistence step fails.
 
 The report itself should lead with decisions, then show the evidence, reviews,

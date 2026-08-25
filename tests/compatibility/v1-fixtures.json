@@ -4,7 +4,8 @@
     "report-manifest": {
       "schema_path": "schemas/v1/report-manifest.schema.json",
       "published_versions": [
-        "1.0.0"
+        "1.0.0",
+        "1.1.0"
       ],
       "fixtures": [
         {
@@ -95,6 +96,89 @@
               "status": "persisted",
               "durable_reference": "SYNTH-COMPAT-ARCHIVE-001",
               "note": "Opaque fictional compatibility reference only."
+            }
+          }
+        },
+        {
+          "fixture_id": "report-manifest-1.1.0-complete",
+          "schema_version": "1.1.0",
+          "instance": {
+            "schema_version": "1.1.0",
+            "report_id": "SYNTH-COMPAT-REPORT-110",
+            "report_type": "system_quality_report",
+            "generated_at": "2026-01-15T14:05:00Z",
+            "data_as_of": "2026-01-15T14:00:00Z",
+            "status": "complete",
+            "status_reason": "All fictional v1.1 compatibility gates pass.",
+            "coverage": {
+              "universe": "one fictional candidate",
+              "expected": 1,
+              "observed": 1,
+              "percent": 100.0,
+              "gaps": []
+            },
+            "freshness": {
+              "status": "fresh",
+              "oldest_material_source_as_of": "2026-01-15T14:00:00Z",
+              "threshold_hours": 24
+            },
+            "sources": [
+              {
+                "source_id": "SYNTH-COMPAT-SOURCE-110",
+                "category": "market",
+                "provenance": "INLINE",
+                "data_as_of": "2026-01-15T14:00:00Z",
+                "retrieved_at": "2026-01-15T14:01:00Z",
+                "checked_at": "2026-01-15T14:02:00Z",
+                "status": "available",
+                "note": "Fictional v1.1 compatibility source only."
+              }
+            ],
+            "quality_flags": [],
+            "idea_ids": [],
+            "decision_ids": [],
+            "gate_inputs": {
+              "reliable_product": true,
+              "completion_profile_id": "declared_bounded_set",
+              "denominator_known": true,
+              "membership_as_of": "2026-01-15T13:55:00Z",
+              "required_period": "synthetic-period-2026-01-15",
+              "required_period_lag_known": true,
+              "required_period_lag": 0,
+              "gap_count": 0,
+              "required_reviews_complete": true,
+              "source_roles": [
+                {
+                  "role": "membership_definition",
+                  "state": "available",
+                  "source_ids": [
+                    "SYNTH-COMPAT-SOURCE-110"
+                  ],
+                  "note": "Fictional membership role only."
+                },
+                {
+                  "role": "eligible_observations",
+                  "state": "available",
+                  "source_ids": [
+                    "SYNTH-COMPAT-SOURCE-110"
+                  ],
+                  "note": "Fictional observation role only."
+                },
+                {
+                  "role": "freshness_reference",
+                  "state": "available",
+                  "source_ids": [
+                    "SYNTH-COMPAT-SOURCE-110"
+                  ],
+                  "note": "Fictional freshness role only."
+                }
+              ]
+            },
+            "artifact": {
+              "status": "persisted",
+              "durable_reference": "SYNTH-COMPAT-RECEIPT-110",
+              "persisted_at": "2026-01-15T14:06:00Z",
+              "note": "Opaque fictional v1.1 receipt only."
             }
           }
         }

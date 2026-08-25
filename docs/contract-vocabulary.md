@@ -39,12 +39,12 @@ remain separate decisions.
 | Value | Canonical meaning |
 | --- | --- |
 | `complete` | Every required coverage, freshness, source, review, and persistence gate passed for the declared report contract |
-| `provisional` | The product is useful, but a required coverage, freshness, or review gate remains incomplete without a material source or persistence failure |
-| `degraded` | A material source, fallback, or persistence failure occurred, and the usable result and failure are both disclosed |
+| `provisional` | The product is useful, but a required coverage, period, freshness, review, or not-attempted persistence gate remains incomplete without a material source or failed-persistence outcome |
+| `degraded` | A required source is unavailable, a non-equivalent fallback is used, or persistence failed; the usable result and failure are both disclosed |
 | `failed` | No reliable decision product could be completed; the manifest still records the failure |
 
-A material source or persistence failure makes `degraded` take precedence over
-`provisional`, even when coverage is also incomplete.
+A required-source or failed-persistence outcome makes `degraded` take
+precedence over `provisional`, even when coverage is also incomplete.
 
 A page load, job completion, non-empty result, or minimum runtime-readiness
 check is not sufficient evidence for `complete`.
@@ -59,7 +59,10 @@ All contract timestamps are RFC 3339 date-times in UTC and end in `Z`.
 | `data_as_of` | The market or evidence cutoff represented by the artifact |
 | `sources[].data_as_of` | The effective time of one source's information |
 | `sources[].retrieved_at` | When that source was obtained for the run |
-| `oldest_material_source_as_of` | The earliest effective time among inputs material to the report decision |
+| `sources[].checked_at` | When source availability and status were evaluated for a report-manifest 1.1 run |
+| `oldest_material_source_as_of` | The earliest effective time among the required-role source IDs used to evaluate the report decision |
+| `membership_as_of` | When the declared eligible-universe membership was fixed |
+| `artifact.persisted_at` | When durable private persistence completed |
 | `first_seen_at` | First recorded appearance of a stable idea lineage |
 | `last_seen_at` | Most recent recorded appearance of that lineage in the current record |
 | `recorded_at` | When a CIO decision record was created |
@@ -84,7 +87,7 @@ clocks must name it explicitly rather than reusing an existing timestamp.
 
 | Field | Meaning |
 | --- | --- |
-| `schema_version` | Semantic version of the public artifact contract |
+| `schema_version` | Semantic version of the public artifact contract; 1.1 adds deterministic acceptance evidence while retaining 1.0 compatibility |
 | `report_id` | Stable identifier for one report artifact |
 | `report_type` | Declared class of report and therefore the applicable required gates |
 | `generated_at` | Artifact-assembly time, as defined above |
@@ -92,9 +95,9 @@ clocks must name it explicitly rather than reusing an existing timestamp.
 | `status` | Report outcome only |
 | `status_reason` | Concise evidence-based explanation of the report outcome |
 | `coverage.universe` | Name of the declared population being measured |
-| `coverage.expected` | Contract denominator expected under the applicable universe definition |
-| `coverage.observed` | Unique eligible members successfully evaluated with all observations required by the applicable gate; it is not a raw fetch or listing count |
-| `coverage.percent` | `observed / expected * 100`; it is not an independent estimate |
+| `coverage.expected` | Contract denominator expected under the applicable universe definition; `0` is the report-manifest 1.1 sentinel when the denominator is unknown |
+| `coverage.observed` | Unique eligible members successfully evaluated with all observations required by the applicable gate; it is not a raw fetch or listing count, and is `0` when the 1.1 denominator is unknown |
+| `coverage.percent` | `observed / expected * 100` when expected is positive; `0` is used for an empty or unknown denominator and is not an independent estimate |
 | `coverage.gaps` | Known missing members or public-safe gap descriptions; never a constituent dump |
 | `freshness.status` | Aggregate freshness outcome only |
 | `freshness.oldest_material_source_as_of` | Oldest material evidence time |
@@ -104,13 +107,25 @@ clocks must name it explicitly rather than reusing an existing timestamp.
 | `sources[].provenance` | `PASTED`, `INLINE`, or `CIO_LEVEL_INFERENCE` |
 | `sources[].data_as_of` | Effective information time for the source |
 | `sources[].retrieved_at` | Retrieval time for the run |
+| `sources[].checked_at` | Required in report-manifest 1.1; time at which source status was checked |
 | `sources[].status` | `available`, `fallback`, `stale`, or `unavailable` for that source only |
 | `sources[].note` | Required disclosure of role, limitation, fallback, or failure |
 | `quality_flags` | Machine-readable unresolved quality conditions |
 | `idea_ids` | Stable idea identifiers included in the report |
 | `decision_ids` | Stable decision identifiers included in the report |
+| `gate_inputs.reliable_product` | Whether a decision-useful product exists; `false` has highest status precedence and yields `failed` |
+| `gate_inputs.completion_profile_id` | Public completion profile governing the bounded universe |
+| `gate_inputs.denominator_known` | Whether expected universe membership is known for the required period |
+| `gate_inputs.membership_as_of` | Membership-freeze time when the denominator is known; omitted otherwise |
+| `gate_inputs.required_period` | Provider-neutral identifier for the required evaluation period |
+| `gate_inputs.required_period_lag_known` | Whether required-period lag could be established for the run |
+| `gate_inputs.required_period_lag` | Count of required periods by which the evaluation lags; omitted when lag is unknown |
+| `gate_inputs.gap_count` | Count of missing eligible evaluations when the denominator is known; omitted otherwise and may exceed the number of summarized public gap descriptions |
+| `gate_inputs.required_reviews_complete` | Whether every report-type-required review completed |
+| `gate_inputs.source_roles[]` | Provider-neutral gate evidence for membership, observations, and freshness roles |
 | `artifact.status` | Durable private persistence outcome only |
-| `artifact.durable_reference` | Optional opaque private reference; never a credential or temporary URL |
+| `artifact.durable_reference` | Non-sensitive opaque receipt token; optional in 1.0 and required for a persisted 1.1 artifact; never a credential, URI, or filesystem path |
+| `artifact.persisted_at` | Report-manifest 1.1 durable persistence completion time |
 | `artifact.note` | Persistence explanation or failure detail |
 
 An expected denominator of zero is not automatically full coverage. Empty or
@@ -119,9 +134,18 @@ unknown universes require an explicit gate rule and cannot silently produce a
 
 When more than one source condition applies, v1 uses the safety-first precedence
 `unavailable` over `stale` over `fallback` over `available`. Secondary
-conditions remain visible in `sources[].note` and `quality_flags`. The v1
-requirement for timestamps when source time is unknown is a public contract gap;
-it must be resolved without inventing a timestamp.
+conditions remain visible in `sources[].note` and `quality_flags`. In
+report-manifest 1.1, unavailable sources omit evidence and retrieval times while
+retaining `checked_at`; unknown aggregate freshness omits the oldest-material
+time. Version 1.0 remains unchanged for compatibility.
+
+Required source-role state is more specific than raw source health. A raw
+`fallback` maps to either `equivalent_fallback` or
+`non_equivalent_fallback` in `gate_inputs.source_roles[]` based on the
+predeclared completion policy. Every source ID linked from one role has the raw
+status implied by that role state; a failed preferred source that was not used
+to fulfill the role remains an unlinked, disclosed source record. Private
+provider mappings remain private.
 
 ## Investment idea field dictionary
 

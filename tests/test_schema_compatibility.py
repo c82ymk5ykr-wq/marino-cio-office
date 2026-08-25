@@ -231,6 +231,29 @@ class SchemaCompatibilityTests(unittest.TestCase):
             with self.subTest(contract=contract_name, path=path):
                 self.assertEqual([], list(validator.iter_errors(instance)))
 
+    def test_legacy_complete_empty_universe_shape_remains_accepted(self) -> None:
+        validator = validator_for(
+            self.contracts["report-manifest"]["schema_path"]
+        )
+        instance = copy.deepcopy(
+            self.fixture("report-manifest", "report-manifest-1.0.0-complete")
+        )
+        instance["coverage"].update(
+            {"expected": 0, "observed": 0, "percent": 0.0, "gaps": []}
+        )
+        self.assertEqual([], list(validator.iter_errors(instance)))
+
+    def test_legacy_v10_min_length_strings_remain_unchanged(self) -> None:
+        validator = validator_for(
+            self.contracts["report-manifest"]["schema_path"]
+        )
+        instance = copy.deepcopy(
+            self.fixture("report-manifest", "report-manifest-1.0.0-complete")
+        )
+        instance["sources"][0]["source_id"] = " "
+        instance["sources"][0]["note"] = " "
+        self.assertEqual([], list(validator.iter_errors(instance)))
+
     def test_version_removal_is_detected(self) -> None:
         schema = copy.deepcopy(
             load_json(self.contracts["investment-idea"]["schema_path"])

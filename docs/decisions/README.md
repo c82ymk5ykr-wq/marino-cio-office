@@ -17,3 +17,4 @@ decision with a new record rather than silently rewriting its rationale.
 | [0003](0003-deterministic-universe-completion-gates.md) | Accepted | Require deterministic full-universe gates for completion claims |
 | [0004](0004-verifiable-idea-lineage.md) | Accepted | Define verifiable idea lineage and anti-staleness metrics |
 | [0005](0005-v1-schema-compatibility-gate.md) | Accepted | Make v1 backward compatibility an executable gate |
+| [0006](0006-deterministic-report-acceptance.md) | Accepted | Add deterministic report acceptance and manifest 1.1 |
