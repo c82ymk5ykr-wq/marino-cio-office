@@ -1,0 +1,89 @@
+{
+  "schema_version": "1.0.0",
+  "review_id": "orv_SYNTH000000000002",
+  "links": {
+    "decision_ref": "ref_SYNTH000000000006",
+    "idea_ref": "ref_SYNTH000000000007",
+    "evidence_refs": [
+      "ref_SYNTH000000000008",
+      "ref_SYNTH000000000009",
+      "ref_SYNTH000000000010"
+    ]
+  },
+  "clocks": {
+    "decision_recorded_at": "2099-02-01T09:00:00Z",
+    "evaluation_started_at": "2099-02-02T09:00:00Z",
+    "evidence_cutoff_at": "2099-02-10T09:00:00Z",
+    "reviewed_at": "2099-02-11T09:00:00Z"
+  },
+  "review_assessability": "assessable",
+  "evidence_quality": "verified",
+  "research_outcome": {
+    "assessment_state": "assessable",
+    "classification": "favorable",
+    "evidence_refs": [
+      "ref_SYNTH000000000008"
+    ],
+    "note": "Fictional observations supported the invented research case."
+  },
+  "decision_quality": {
+    "assessment_state": "assessable",
+    "classification": "unsound",
+    "evidence_refs": [
+      "ref_SYNTH000000000009"
+    ],
+    "note": "The invented decision omitted a required ex-ante evidence check despite the favorable outcome."
+  },
+  "process_quality": {
+    "assessment_state": "assessable",
+    "classification": "undisciplined",
+    "evidence_refs": [
+      "ref_SYNTH000000000009"
+    ],
+    "note": "The fictional review sequence skipped a declared process gate."
+  },
+  "timing_discipline": {
+    "assessment_state": "assessable",
+    "classification": "undisciplined",
+    "evidence_refs": [
+      "ref_SYNTH000000000010"
+    ],
+    "note": "The fictional timing evidence was not observed before the decision."
+  },
+  "invalidation_trigger": {
+    "state": "not_triggered",
+    "evidence_refs": [
+      "ref_SYNTH000000000010"
+    ],
+    "note": "No invented invalidation condition was observed by the fictional cutoff."
+  },
+  "invalidation_response": {
+    "state": "not_applicable",
+    "evidence_refs": [],
+    "note": "No response was applicable because no fictional trigger occurred."
+  },
+  "attribution": {
+    "assessment_state": "assessable",
+    "factors": [
+      {
+        "category": "external_conditions",
+        "direction": "supporting",
+        "confidence": "low",
+        "evidence_refs": [
+          "ref_SYNTH000000000008"
+        ],
+        "note": "A fictional external condition was associated with the favorable research outcome."
+      },
+      {
+        "category": "decision_process",
+        "direction": "detracting",
+        "confidence": "high",
+        "evidence_refs": [
+          "ref_SYNTH000000000009"
+        ],
+        "note": "Invented process evidence supports the separate unsound-decision assessment."
+      }
+    ],
+    "note": "The favorable fictional outcome does not validate the undisciplined process."
+  }
+}

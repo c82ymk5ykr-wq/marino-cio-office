@@ -23,6 +23,8 @@ not be merged casually.
   performance, tax, estate, insurance, or planning information;
 - actual CIO decisions, generated reports or PDFs, Chief Historian memory, logs,
   traces, snapshots, and durable storage references;
+- populated outcome reviews, attribution entries, linked evidence, review dates
+  or windows, outcome aggregates, and detailed conformance evidence;
 - raw market, research, news, or provider data without redistribution rights;
 - raw chat transcripts or exported conversation context.
 
@@ -40,6 +42,10 @@ If persistence fails, the run records a degraded or failed persistence outcome,
 discloses it to the user, and preserves as much of the decision product as is
 safely possible. A persistence failure must not be hidden by calling the report
 complete.
+
+Finalized outcome reviews also belong only in approved private storage. Git
+tracks their schema, template, state rules, and invented fixtures—not populated
+reviews, redactions, hashes, aggregates, mappings, or history.
 
 ## Change coordination
 

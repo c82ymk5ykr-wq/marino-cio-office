@@ -21,6 +21,8 @@ required to accept fields introduced by a later, compatible v1 revision.
 Examples include:
 
 - adding an optional field;
+- adding a new independent artifact family at `1.0.0` when existing contracts
+  do not depend on it;
 - adding a new `1.x.0` artifact revision while preserving prior version branches;
 - adding conditional requirements that apply only to the new revision;
 - clarifying descriptions without changing field meaning; and
@@ -51,6 +53,11 @@ is an append-only, visibly fictional compatibility floor. CI checks that:
 The corpus is a strong regression gate, not a formal proof that every possible
 historical JSON instance remains valid. Semantic reinterpretation and private
 migration impact still require human review.
+
+The additive `outcome-review 1.0.0` family does not revise the existing
+`report-manifest`, `investment-idea`, or `decision-record` families. Its
+own retained fixtures become part of the same append-only v1 compatibility
+floor.
 
 ## Corpus maintenance
 

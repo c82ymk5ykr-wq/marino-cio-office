@@ -421,6 +421,379 @@
           }
         }
       ]
+    },
+    "outcome-review": {
+      "schema_path": "schemas/v1/outcome-review.schema.json",
+      "published_versions": [
+        "1.0.0"
+      ],
+      "fixtures": [
+        {
+          "fixture_id": "outcome-review-1.0.0-adverse-disciplined",
+          "schema_version": "1.0.0",
+          "instance": {
+            "schema_version": "1.0.0",
+            "review_id": "orv_SYNTH000000000001",
+            "links": {
+              "decision_ref": "ref_SYNTH000000000001",
+              "idea_ref": "ref_SYNTH000000000002",
+              "evidence_refs": [
+                "ref_SYNTH000000000003",
+                "ref_SYNTH000000000004",
+                "ref_SYNTH000000000005"
+              ]
+            },
+            "clocks": {
+              "decision_recorded_at": "2099-01-01T09:00:00Z",
+              "evaluation_started_at": "2099-01-02T09:00:00Z",
+              "evidence_cutoff_at": "2099-01-10T09:00:00Z",
+              "reviewed_at": "2099-01-11T09:00:00Z"
+            },
+            "review_assessability": "assessable",
+            "evidence_quality": "verified",
+            "research_outcome": {
+              "assessment_state": "assessable",
+              "classification": "adverse",
+              "evidence_refs": [
+                "ref_SYNTH000000000003"
+              ],
+              "note": "Fictional observations challenged the invented research case."
+            },
+            "decision_quality": {
+              "assessment_state": "assessable",
+              "classification": "sound",
+              "evidence_refs": [
+                "ref_SYNTH000000000004"
+              ],
+              "note": "The fictional decision used the evidence available at its original clock."
+            },
+            "process_quality": {
+              "assessment_state": "assessable",
+              "classification": "disciplined",
+              "evidence_refs": [
+                "ref_SYNTH000000000004"
+              ],
+              "note": "The invented process completed each declared review step."
+            },
+            "timing_discipline": {
+              "assessment_state": "assessable",
+              "classification": "disciplined",
+              "evidence_refs": [
+                "ref_SYNTH000000000005"
+              ],
+              "note": "The fictional timing prerequisites were observed without implying deployment."
+            },
+            "invalidation_trigger": {
+              "state": "not_triggered",
+              "evidence_refs": [
+                "ref_SYNTH000000000005"
+              ],
+              "note": "No invented invalidation condition was observed by the fictional cutoff."
+            },
+            "invalidation_response": {
+              "state": "not_applicable",
+              "evidence_refs": [],
+              "note": "No response was applicable because no fictional trigger occurred."
+            },
+            "attribution": {
+              "assessment_state": "assessable",
+              "factors": [
+                {
+                  "category": "external_conditions",
+                  "direction": "detracting",
+                  "confidence": "medium",
+                  "evidence_refs": [
+                    "ref_SYNTH000000000003"
+                  ],
+                  "note": "A fictional external condition was qualitatively associated with the adverse research outcome."
+                },
+                {
+                  "category": "decision_process",
+                  "direction": "supporting",
+                  "confidence": "high",
+                  "evidence_refs": [
+                    "ref_SYNTH000000000004"
+                  ],
+                  "note": "Invented process evidence supports the separate sound-decision assessment."
+                }
+              ],
+              "note": "These fictional factors are qualitative associations, not causal or performance claims."
+            }
+          }
+        },
+        {
+          "fixture_id": "outcome-review-1.0.0-invalidation-followed",
+          "schema_version": "1.0.0",
+          "instance": {
+            "schema_version": "1.0.0",
+            "review_id": "orv_SYNTH000000000003",
+            "links": {
+              "decision_ref": "ref_SYNTH000000000011",
+              "idea_ref": "ref_SYNTH000000000012",
+              "evidence_refs": [
+                "ref_SYNTH000000000013",
+                "ref_SYNTH000000000014",
+                "ref_SYNTH000000000015"
+              ]
+            },
+            "clocks": {
+              "decision_recorded_at": "2099-03-01T09:00:00Z",
+              "evaluation_started_at": "2099-03-02T09:00:00Z",
+              "evidence_cutoff_at": "2099-03-10T09:00:00Z",
+              "reviewed_at": "2099-03-11T09:00:00Z"
+            },
+            "review_assessability": "assessable",
+            "evidence_quality": "verified",
+            "research_outcome": {
+              "assessment_state": "assessable",
+              "classification": "adverse",
+              "evidence_refs": [
+                "ref_SYNTH000000000013"
+              ],
+              "note": "Fictional observations challenged the invented research case."
+            },
+            "decision_quality": {
+              "assessment_state": "assessable",
+              "classification": "sound",
+              "evidence_refs": [
+                "ref_SYNTH000000000014"
+              ],
+              "note": "The invented ex-ante decision documented the condition later observed."
+            },
+            "process_quality": {
+              "assessment_state": "assessable",
+              "classification": "disciplined",
+              "evidence_refs": [
+                "ref_SYNTH000000000014"
+              ],
+              "note": "The fictional process retained and checked the original invalidation condition."
+            },
+            "timing_discipline": {
+              "assessment_state": "assessable",
+              "classification": "disciplined",
+              "evidence_refs": [
+                "ref_SYNTH000000000015"
+              ],
+              "note": "The invented response followed the applicable private timing policy."
+            },
+            "invalidation_trigger": {
+              "state": "triggered",
+              "triggered_at": "2099-03-06T09:00:00Z",
+              "evidence_refs": [
+                "ref_SYNTH000000000013"
+              ],
+              "note": "A visibly fictional invalidation condition was observed."
+            },
+            "invalidation_response": {
+              "state": "followed",
+              "responded_at": "2099-03-06T10:00:00Z",
+              "evidence_refs": [
+                "ref_SYNTH000000000015"
+              ],
+              "note": "The invented response followed the fictional condition without recording any deployment action."
+            },
+            "attribution": {
+              "assessment_state": "assessable",
+              "factors": [
+                {
+                  "category": "invalidation_handling",
+                  "direction": "supporting",
+                  "confidence": "high",
+                  "evidence_refs": [
+                    "ref_SYNTH000000000013",
+                    "ref_SYNTH000000000015"
+                  ],
+                  "note": "Fictional evidence supports a disciplined invalidation-response assessment."
+                }
+              ],
+              "note": "The qualitative association makes no causal or investment-performance claim."
+            }
+          }
+        },
+        {
+          "fixture_id": "outcome-review-1.0.0-partial",
+          "schema_version": "1.0.0",
+          "instance": {
+            "schema_version": "1.0.0",
+            "review_id": "orv_SYNTH000000000005",
+            "links": {
+              "decision_ref": "ref_SYNTH000000000021",
+              "idea_ref": "ref_SYNTH000000000022",
+              "evidence_refs": [
+                "ref_SYNTH000000000023"
+              ]
+            },
+            "clocks": {
+              "decision_recorded_at": "2099-05-01T09:00:00Z",
+              "evaluation_started_at": "2099-05-02T09:00:00Z",
+              "evidence_cutoff_at": "2099-05-10T09:00:00Z",
+              "reviewed_at": "2099-05-11T09:00:00Z"
+            },
+            "review_assessability": "partial",
+            "evidence_quality": "partial",
+            "research_outcome": {
+              "assessment_state": "partial",
+              "classification": "mixed",
+              "evidence_refs": [
+                "ref_SYNTH000000000023"
+              ],
+              "note": "Only one invented observation is retained, so the fictional outcome is partial."
+            },
+            "decision_quality": {
+              "assessment_state": "unknown",
+              "evidence_refs": [],
+              "note": "The fictional ex-ante support needed for this axis is not retained."
+            },
+            "process_quality": {
+              "assessment_state": "unavailable",
+              "evidence_refs": [],
+              "note": "The invented process history is unavailable and was not reconstructed."
+            },
+            "timing_discipline": {
+              "assessment_state": "not_applicable",
+              "evidence_refs": [],
+              "note": "The fictional case has no applicable timing assessment."
+            },
+            "invalidation_trigger": {
+              "state": "unknown",
+              "evidence_refs": [],
+              "note": "The fictional invalidation history cannot be established."
+            },
+            "invalidation_response": {
+              "state": "unknown",
+              "evidence_refs": [],
+              "note": "A response cannot be assessed while the fictional trigger history is unknown."
+            },
+            "attribution": {
+              "assessment_state": "partial",
+              "factors": [
+                {
+                  "category": "evidence_quality",
+                  "direction": "unclear",
+                  "confidence": "low",
+                  "evidence_refs": [
+                    "ref_SYNTH000000000023"
+                  ],
+                  "note": "The single fictional evidence link permits only a low-confidence qualitative association."
+                }
+              ],
+              "note": "Unavailable history remains explicit and no missing record is reconstructed."
+            }
+          }
+        },
+        {
+          "fixture_id": "outcome-review-1.0.0-unknown-unverified",
+          "schema_version": "1.0.0",
+          "instance": {
+            "schema_version": "1.0.0",
+            "review_id": "orv_SYNTH000000000006",
+            "links": {
+              "decision_ref": "ref_SYNTH000000000024",
+              "idea_ref": "ref_SYNTH000000000025",
+              "evidence_refs": []
+            },
+            "clocks": {
+              "decision_recorded_at": "2099-05-12T09:00:00Z",
+              "evaluation_started_at": "2099-05-13T09:00:00Z",
+              "evidence_cutoff_at": "2099-05-20T09:00:00Z",
+              "reviewed_at": "2099-05-21T09:00:00Z"
+            },
+            "review_assessability": "unknown",
+            "evidence_quality": "unverified",
+            "research_outcome": {
+              "assessment_state": "unknown",
+              "evidence_refs": [],
+              "note": "The fictional outcome history cannot be verified, so no classification is inferred."
+            },
+            "decision_quality": {
+              "assessment_state": "unknown",
+              "evidence_refs": [],
+              "note": "The fictional ex-ante history cannot be verified."
+            },
+            "process_quality": {
+              "assessment_state": "unknown",
+              "evidence_refs": [],
+              "note": "The fictional process history cannot be verified."
+            },
+            "timing_discipline": {
+              "assessment_state": "unknown",
+              "evidence_refs": [],
+              "note": "The fictional timing history cannot be verified."
+            },
+            "invalidation_trigger": {
+              "state": "unknown",
+              "evidence_refs": [],
+              "note": "The fictional invalidation history cannot be verified."
+            },
+            "invalidation_response": {
+              "state": "unknown",
+              "evidence_refs": [],
+              "note": "The fictional response history cannot be verified."
+            },
+            "attribution": {
+              "assessment_state": "unknown",
+              "factors": [],
+              "note": "No attribution is inferred from unverified fictional history."
+            }
+          }
+        },
+        {
+          "fixture_id": "outcome-review-1.0.0-unavailable",
+          "schema_version": "1.0.0",
+          "instance": {
+            "schema_version": "1.0.0",
+            "review_id": "orv_SYNTH000000000007",
+            "links": {
+              "decision_ref": "ref_SYNTH000000000026",
+              "idea_ref": "ref_SYNTH000000000027",
+              "evidence_refs": []
+            },
+            "clocks": {
+              "decision_recorded_at": "2099-06-01T09:00:00Z",
+              "evaluation_started_at": "2099-06-02T09:00:00Z",
+              "evidence_cutoff_at": "2099-06-10T09:00:00Z",
+              "reviewed_at": "2099-06-11T09:00:00Z"
+            },
+            "review_assessability": "unavailable",
+            "evidence_quality": "unavailable",
+            "research_outcome": {
+              "assessment_state": "unavailable",
+              "evidence_refs": [],
+              "note": "No fictional outcome evidence is retained, so no outcome is inferred."
+            },
+            "decision_quality": {
+              "assessment_state": "unavailable",
+              "evidence_refs": [],
+              "note": "No fictional decision-quality evidence is retained."
+            },
+            "process_quality": {
+              "assessment_state": "unavailable",
+              "evidence_refs": [],
+              "note": "No fictional process history is retained."
+            },
+            "timing_discipline": {
+              "assessment_state": "unavailable",
+              "evidence_refs": [],
+              "note": "No fictional timing history is retained."
+            },
+            "invalidation_trigger": {
+              "state": "unknown",
+              "evidence_refs": [],
+              "note": "The fictional invalidation history is unavailable, so trigger state remains unknown."
+            },
+            "invalidation_response": {
+              "state": "unknown",
+              "evidence_refs": [],
+              "note": "The fictional response history is unavailable, so response state remains unknown."
+            },
+            "attribution": {
+              "assessment_state": "unavailable",
+              "factors": [],
+              "note": "No attribution is created from unavailable fictional history."
+            }
+          }
+        }
+      ]
     }
   }
 }
