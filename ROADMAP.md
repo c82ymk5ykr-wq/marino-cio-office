@@ -51,11 +51,17 @@ surface contract failures clearly.
 
 ## Phase 4 — Learning loop
 
-- [ ] Define private outcome-review and decision-attribution interfaces
-      ([contract](docs/outcome-review-contract.md), pending categorical private
-      producer/consumer conformance).
+- [x] Define private outcome-review and decision-attribution interfaces
+      ([contract](docs/outcome-review-contract.md), `outcome-review 1.0.0`
+      adopted).
 - [ ] Measure idea novelty, repeat quality, timing discipline, and invalidations.
 - [ ] Feed approved lessons into Chief Historian review and future decisions.
+
+Completion evidence for outcome 1: categorical private conformance is verified
+for producer serialization, consumer parsing, opaque-link reconciliation,
+append-only behavior, unchanged ex-ante records, state/clock handling, and
+boundary exclusion. Private mappings, artifacts, evidence, history, and runtime
+details remain outside this repository.
 
 Exit condition: lessons become versioned operating improvements without moving
 private decisions or performance history into this repository.
