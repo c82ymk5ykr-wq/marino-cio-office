@@ -54,14 +54,31 @@ surface contract failures clearly.
 - [x] Define private outcome-review and decision-attribution interfaces
       ([contract](docs/outcome-review-contract.md), `outcome-review 1.0.0`
       adopted).
-- [ ] Measure idea novelty, repeat quality, timing discipline, and invalidations.
-- [ ] Feed approved lessons into Chief Historian review and future decisions.
+- [x] Measure idea novelty, repeat quality, timing discipline, and invalidations.
+- [x] Feed approved lessons into Chief Historian review and future decisions.
 
 Completion evidence for outcome 1: categorical private conformance is verified
 for producer serialization, consumer parsing, opaque-link reconciliation,
 append-only behavior, unchanged ex-ante records, state/clock handling, and
 boundary exclusion. Private mappings, artifacts, evidence, history, and runtime
 details remain outside this repository.
+
+Completion evidence for outcome 2: categorical private conformance is verified
+for adopted input and semantic validation, paired immutable same-cutoff cohorts,
+unverified missing lineage, unique terminal-review selection, explicit missing,
+invalid, and unresolved exclusions, exact numerator and denominator arithmetic,
+zero-denominator handling, append-only snapshot creation, and boundary
+exclusion.
+
+Completion evidence for outcome 3: categorical private conformance is verified
+for exact review and content reconciliation, append-only supersession and
+retirement, terminal-active selection at decision time, immutable earlier
+decisions, decision-record 1.1 exact lesson traces, human-approved advisory-only
+ingestion, and boundary exclusion.
+
+Only these categorical results are recorded publicly. Private mappings,
+artifacts, receipts, measurements, histories, and runtime details remain outside
+this repository.
 
 Exit condition: lessons become versioned operating improvements without moving
 private decisions or performance history into this repository.
