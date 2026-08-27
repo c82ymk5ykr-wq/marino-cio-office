@@ -5,6 +5,7 @@
 
 - Decision ID: `<stable-id>`
 - Idea ID: `<linked-idea-id>`
+- Schema version: `<1.0.0 | 1.1.0>`
 - Recorded at (UTC): `<YYYY-MM-DDTHH:MM:SSZ>`
 - Review by (UTC): `<YYYY-MM-DDTHH:MM:SSZ>`
 
@@ -27,6 +28,12 @@
 ## Chief Historian note
 
 `<prior setup, result, or process lesson>`
+
+For `decision-record 1.1.0`, list only exact approved lesson revisions
+materially used in this Chief Historian review. Use an empty list when none
+applied; never reconstruct missing history. Version 1.0 omits this field.
+
+- Historian lesson version reference: `<opaque hlv_ token>`
 
 ## Chief Skeptic countercase
 

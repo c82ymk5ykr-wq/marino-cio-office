@@ -20,3 +20,5 @@ decision with a new record rather than silently rewriting its rationale.
 | [0006](0006-deterministic-report-acceptance.md) | Accepted | Add deterministic report acceptance and manifest 1.1 |
 | [0007](0007-private-contract-adoption-attestation.md) | Accepted | Attest private contract adoption without publishing mappings |
 | [0008](0008-append-only-outcome-review.md) | Accepted | Append hindsight in a separate qualitative outcome-review artifact |
+| [0009](0009-deterministic-learning-loop-measurement.md) | Accepted | Derive learning measurements from frozen, evidence-complete cohorts |
+| [0010](0010-human-approved-versioned-historian-lessons.md) | Accepted | Gate versioned Chief Historian lessons through human approval and ingestion |

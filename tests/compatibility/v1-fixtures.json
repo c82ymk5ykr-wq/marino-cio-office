@@ -386,7 +386,8 @@
     "decision-record": {
       "schema_path": "schemas/v1/decision-record.schema.json",
       "published_versions": [
-        "1.0.0"
+        "1.0.0",
+        "1.1.0"
       ],
       "fixtures": [
         {
@@ -418,6 +419,148 @@
             "evidence_ids": [
               "SYNTH-COMPAT-SOURCE"
             ]
+          }
+        },
+        {
+          "fixture_id": "decision-record-1.1.0-historian-lesson",
+          "schema_version": "1.1.0",
+          "instance": {
+            "schema_version": "1.1.0",
+            "decision_id": "SYNTH-COMPAT-DECISION-110",
+            "idea_id": "SYNTH-COMPAT-IDEA-110",
+            "recorded_at": "2099-01-15T14:05:00Z",
+            "research_disposition": "monitor",
+            "deployment": {
+              "readiness": "not_ready",
+              "action": "no_action",
+              "timing_and_confirmation": "Fictional confirmation only.",
+              "size_band": "Synthetic policy band only.",
+              "scaling_plan": "Synthetic scaling policy only."
+            },
+            "rationale": "Fictional exact-version compatibility rationale.",
+            "historian_note": "One invented approved lesson revision was materially used.",
+            "historian_lesson_version_refs": [
+              "hlv_SYNTHCOMPAT000101"
+            ],
+            "skeptic_countercase": "Fictional compatibility countercase.",
+            "alternatives_considered": [
+              "Fictional alternative."
+            ],
+            "invalidation_conditions": [
+              "Fictional invalidation."
+            ],
+            "review_by": "2099-02-15T14:05:00Z",
+            "evidence_ids": [
+              "SYNTH-COMPAT-SOURCE"
+            ]
+          }
+        },
+        {
+          "fixture_id": "decision-record-1.1.0-no-lesson",
+          "schema_version": "1.1.0",
+          "instance": {
+            "schema_version": "1.1.0",
+            "decision_id": "SYNTH-COMPAT-DECISION-111",
+            "idea_id": "SYNTH-COMPAT-IDEA-111",
+            "recorded_at": "2099-01-15T14:06:00Z",
+            "research_disposition": "hold",
+            "deployment": {
+              "readiness": "blocked",
+              "action": "no_action",
+              "timing_and_confirmation": "No approved fictional lesson applies.",
+              "size_band": "Synthetic policy band only.",
+              "scaling_plan": "Synthetic scaling policy only."
+            },
+            "rationale": "Fictional no-lesson compatibility rationale.",
+            "historian_note": "No approved fictional lesson applied and no history was reconstructed.",
+            "historian_lesson_version_refs": [],
+            "skeptic_countercase": "Fictional compatibility countercase.",
+            "alternatives_considered": [
+              "Fictional alternative."
+            ],
+            "invalidation_conditions": [
+              "Fictional invalidation."
+            ],
+            "review_by": "2099-02-15T14:06:00Z",
+            "evidence_ids": [
+              "SYNTH-COMPAT-SOURCE"
+            ]
+          }
+        }
+      ]
+    },
+    "historian-lesson": {
+      "schema_path": "schemas/v1/historian-lesson.schema.json",
+      "published_versions": [
+        "1.0.0"
+      ],
+      "fixtures": [
+        {
+          "fixture_id": "historian-lesson-1.0.0-initial",
+          "schema_version": "1.0.0",
+          "instance": {
+            "schema_version": "1.0.0",
+            "lesson_series_id": "hls_SYNTHCOMPAT000001",
+            "lesson_version_ref": "hlv_SYNTHCOMPAT000101",
+            "revision": 1,
+            "state": "active",
+            "source_reviews": [
+              {
+                "review_ref": "orv_SYNTH000000000001",
+                "finalized_at": "2099-01-11T09:00:00Z"
+              }
+            ],
+            "clocks": {
+              "data_as_of": "2099-01-10T09:00:00Z",
+              "approved_at": "2099-01-12T09:00:00Z",
+              "ingested_at": "2099-01-13T09:00:00Z",
+              "generated_at": "2099-01-14T09:00:00Z"
+            },
+            "approval": {
+              "authority_type": "human",
+              "status": "approved",
+              "receipt": "apr_SYNTHCOMPAT000101"
+            },
+            "ingestion": {
+              "status": "ingested",
+              "receipt": "ing_SYNTHCOMPAT000101",
+              "mode": "advisory_only"
+            },
+            "content_ref": "ref_SYNTHCOMPAT000201"
+          }
+        },
+        {
+          "fixture_id": "historian-lesson-1.0.0-retired",
+          "schema_version": "1.0.0",
+          "instance": {
+            "schema_version": "1.0.0",
+            "lesson_series_id": "hls_SYNTHCOMPAT000001",
+            "lesson_version_ref": "hlv_SYNTHCOMPAT000102",
+            "revision": 2,
+            "state": "retired",
+            "prior_version_ref": "hlv_SYNTHCOMPAT000101",
+            "source_reviews": [
+              {
+                "review_ref": "orv_SYNTH000000000002",
+                "finalized_at": "2099-02-11T09:00:00Z"
+              }
+            ],
+            "clocks": {
+              "data_as_of": "2099-02-10T09:00:00Z",
+              "approved_at": "2099-02-12T09:00:00Z",
+              "ingested_at": "2099-02-13T09:00:00Z",
+              "generated_at": "2099-02-14T09:00:00Z"
+            },
+            "approval": {
+              "authority_type": "human",
+              "status": "approved",
+              "receipt": "apr_SYNTHCOMPAT000102"
+            },
+            "ingestion": {
+              "status": "ingested",
+              "receipt": "ing_SYNTHCOMPAT000102",
+              "mode": "advisory_only"
+            }
           }
         }
       ]

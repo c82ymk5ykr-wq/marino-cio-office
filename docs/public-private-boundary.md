@@ -25,6 +25,10 @@ not be merged casually.
   traces, snapshots, and durable storage references;
 - populated outcome reviews, attribution entries, linked evidence, review dates
   or windows, outcome aggregates, and detailed conformance evidence;
+- populated learning measurements, cohort membership, exclusions, windows,
+  counts, rates, repeat ages, targets, and detailed metric evidence;
+- Chief Historian lesson content, candidates, approval identities, version
+  chains, content references, receipts, mappings, usage records, and memory;
 - raw market, research, news, or provider data without redistribution rights;
 - raw chat transcripts or exported conversation context.
 
@@ -46,6 +50,12 @@ complete.
 Finalized outcome reviews also belong only in approved private storage. Git
 tracks their schema, template, state rules, and invented fixtures—not populated
 reviews, redactions, hashes, aggregates, mappings, or history.
+
+Learning-loop measurements and Chief Historian lesson controls follow the same
+rule. Git may track their implementation-neutral formulas, metadata contracts,
+templates, lifecycle rules, and invented fixtures. Real or private populated
+measurements, lessons, content, receipts, decisions, and usage history never
+enter a public branch, pull request, issue, CI log, or artifact.
 
 ## Change coordination
 

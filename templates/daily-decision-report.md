@@ -90,9 +90,14 @@ condition that would justify reconsideration.
 
 ## Chief Historian review
 
+- Applied approved lesson versions: `<hlv_ opaque refs or none>`
 - Relevant prior setup or process lesson: `<summary>`
 - Similarities and differences: `<comparison>`
 - Historical failure mode to avoid: `<risk>`
+
+List only exact, terminal active lesson versions materially used in this
+review. Approval and ingestion are advisory controls; they do not authorize an
+automatic prompt, code, weighting, research-disposition, or deployment change.
 
 ## Chief Skeptic review
 

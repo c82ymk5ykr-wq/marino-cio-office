@@ -31,9 +31,14 @@ prompts, ranking weights, provider adapters, positions, and implementation code.
 9. **Publish and persist privately.** Produce the manifest and report, record the
    durable persistence outcome, and preserve any failure without relying on a
    temporary link as the source of truth.
-10. **Review outcomes privately.** Append a separate outcome-review artifact
-    without mutating the ex-ante decision. Lesson approval and Chief Historian
-    ingestion are later, distinct controls.
+10. **Review and measure outcomes privately.** Append a separate outcome-review
+    artifact without mutating the ex-ante decision, then derive novelty,
+    repeat-quality, timing, and invalidation measurements from frozen cohorts.
+    Missing or unresolved history remains counted and excluded.
+11. **Approve lessons before reuse.** A human-authorized lesson becomes eligible
+    only after immutable approval and Chief Historian ingestion controls pass.
+    Future decisions trace the exact active lesson versions materially used;
+    the controls never rewrite history or execute a system change.
 
 ## Canonical roles and capabilities
 
@@ -138,3 +143,17 @@ decision quality, process quality, timing discipline, invalidation trigger,
 invalidation response, and qualitative attribution remain separate. Populated
 reviews and their evidence stay private; this public repository contains only
 the interface and invented fixtures.
+
+## Learning loop
+
+Private learning measurement follows
+[`learning-loop-metrics.md`](learning-loop-metrics.md). It reuses verified
+`investment-idea 1.1.0` lineage and uniquely resolved terminal
+`outcome-review 1.0.0` records. It publishes no composite quality score and
+does not infer one axis from another.
+
+Only controls conforming to the independent
+[`historian-lesson` contract](historian-lesson-contract.md) may enter Chief
+Historian review. Approval and ingestion make a lesson advisory and traceable;
+they do not authorize automatic prompt, code, configuration, weighting,
+research-disposition, or deployment changes.

@@ -59,6 +59,12 @@ The additive `outcome-review 1.0.0` family does not revise the existing
 own retained fixtures become part of the same append-only v1 compatibility
 floor.
 
+The additive `historian-lesson 1.0.0` family and the compatible
+`decision-record 1.1.0` revision follow the same gate. Decision-record 1.0.0
+remains valid and forbids the later revision's lesson-reference field;
+decision-record 1.1.0 requires the exact-version trace, including an empty
+array when no approved lesson applied.
+
 ## Corpus maintenance
 
 - Never rewrite a retained fixture to make an incompatible schema pass.

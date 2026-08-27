@@ -1,0 +1,272 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://raw.githubusercontent.com/c82ymk5ykr-wq/marino-cio-office/main/schemas/v1/historian-lesson.schema.json",
+  "title": "Marino CIO Office Chief Historian lesson control",
+  "description": "Metadata-only contract for a finalized, human-approved, successfully ingested, advisory Chief Historian lesson revision. Real lesson content and control records remain private.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "lesson_series_id",
+    "lesson_version_ref",
+    "revision",
+    "state",
+    "source_reviews",
+    "clocks",
+    "approval",
+    "ingestion"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "1.0.0"
+    },
+    "lesson_series_id": {
+      "$ref": "#/$defs/lesson_series_identifier"
+    },
+    "lesson_version_ref": {
+      "$ref": "#/$defs/lesson_version_reference",
+      "description": "Exact immutable revision reference used by decision-record 1.1. It must not encode lesson content or private semantics."
+    },
+    "revision": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "state": {
+      "type": "string",
+      "enum": [
+        "active",
+        "retired"
+      ]
+    },
+    "prior_version_ref": {
+      "$ref": "#/$defs/lesson_version_reference",
+      "description": "Exact reference to revision N-1 in the same lesson series."
+    },
+    "source_reviews": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "$ref": "#/$defs/source_review"
+      },
+      "uniqueItems": true
+    },
+    "clocks": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "data_as_of",
+        "approved_at",
+        "ingested_at",
+        "generated_at"
+      ],
+      "properties": {
+        "data_as_of": {
+          "$ref": "#/$defs/utc_timestamp",
+          "description": "Latest effective evidence time represented by this lesson revision."
+        },
+        "approved_at": {
+          "$ref": "#/$defs/utc_timestamp",
+          "description": "Time a human authority approved this exact immutable revision."
+        },
+        "ingested_at": {
+          "$ref": "#/$defs/utc_timestamp",
+          "description": "Time the advisory lesson revision was acknowledged as ingested."
+        },
+        "generated_at": {
+          "$ref": "#/$defs/utc_timestamp",
+          "description": "Time this metadata control artifact was assembled."
+        }
+      }
+    },
+    "approval": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "authority_type",
+        "status",
+        "receipt"
+      ],
+      "properties": {
+        "authority_type": {
+          "const": "human",
+          "description": "Categorical authority only. Approval identity remains private."
+        },
+        "status": {
+          "const": "approved"
+        },
+        "receipt": {
+          "$ref": "#/$defs/approval_receipt"
+        }
+      }
+    },
+    "ingestion": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "status",
+        "receipt",
+        "mode"
+      ],
+      "properties": {
+        "status": {
+          "const": "ingested"
+        },
+        "receipt": {
+          "$ref": "#/$defs/ingestion_receipt"
+        },
+        "mode": {
+          "const": "advisory_only",
+          "description": "Ingestion makes guidance eligible for review; it executes no change or action."
+        }
+      }
+    },
+    "content_ref": {
+      "$ref": "#/$defs/content_reference",
+      "description": "Opaque reference to the exact immutable private lesson body. Present only for an active revision."
+    }
+  },
+  "$defs": {
+    "lesson_series_identifier": {
+      "type": "string",
+      "pattern": "^hls_[A-Za-z0-9_-]{16,128}$",
+      "description": "Opaque stable identifier for one lesson series."
+    },
+    "lesson_version_reference": {
+      "type": "string",
+      "pattern": "^hlv_[A-Za-z0-9_-]{16,128}$",
+      "description": "Opaque exact-version reference with no lesson content or private semantics encoded in it."
+    },
+    "review_reference": {
+      "type": "string",
+      "pattern": "^orv_[A-Za-z0-9_-]{16,128}$",
+      "description": "Opaque reference to a finalized private outcome review."
+    },
+    "approval_receipt": {
+      "type": "string",
+      "pattern": "^apr_[A-Za-z0-9_-]{16,128}$",
+      "description": "Opaque immutable acknowledgement of human approval; never an identity, path, URI, or payload hash."
+    },
+    "ingestion_receipt": {
+      "type": "string",
+      "pattern": "^ing_[A-Za-z0-9_-]{16,128}$",
+      "description": "Opaque immutable acknowledgement of successful advisory ingestion; never a path, URI, or payload hash."
+    },
+    "content_reference": {
+      "type": "string",
+      "pattern": "^ref_[A-Za-z0-9_-]{16,128}$",
+      "description": "Opaque private reconciliation token, not a path, URI, provider alias, embedded body, or hash field."
+    },
+    "utc_timestamp": {
+      "type": "string",
+      "format": "date-time",
+      "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(?:\\.\\d+)?Z(?![\\s\\S])"
+    },
+    "source_review": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "review_ref",
+        "finalized_at"
+      ],
+      "properties": {
+        "review_ref": {
+          "$ref": "#/$defs/review_reference"
+        },
+        "finalized_at": {
+          "$ref": "#/$defs/utc_timestamp",
+          "description": "Finalization time of the linked review, retained so approval ordering can be validated without publishing its body."
+        }
+      }
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "revision": {
+            "const": 1
+          }
+        },
+        "required": [
+          "revision"
+        ]
+      },
+      "then": {
+        "properties": {
+          "state": {
+            "const": "active"
+          }
+        },
+        "required": [
+          "content_ref"
+        ],
+        "not": {
+          "required": [
+            "prior_version_ref"
+          ]
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "revision": {
+            "minimum": 2
+          }
+        },
+        "required": [
+          "revision"
+        ]
+      },
+      "then": {
+        "required": [
+          "prior_version_ref"
+        ]
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "state": {
+            "const": "active"
+          }
+        },
+        "required": [
+          "state"
+        ]
+      },
+      "then": {
+        "required": [
+          "content_ref"
+        ]
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "state": {
+            "const": "retired"
+          }
+        },
+        "required": [
+          "state"
+        ]
+      },
+      "then": {
+        "required": [
+          "prior_version_ref"
+        ],
+        "properties": {
+          "revision": {
+            "minimum": 2
+          }
+        },
+        "not": {
+          "required": [
+            "content_ref"
+          ]
+        }
+      }
+    }
+  ]
+}

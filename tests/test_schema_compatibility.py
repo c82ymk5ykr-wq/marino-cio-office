@@ -311,6 +311,76 @@ class SchemaCompatibilityTests(unittest.TestCase):
         instance["prior_review_ref"] = "orv_SYNTH000000000099"
         self.assertEqual([], list(validator.iter_errors(instance)))
 
+    def test_decision_record_1_1_exact_refs_are_version_scoped(self) -> None:
+        validator = validator_for(self.contracts["decision-record"]["schema_path"])
+        legacy = copy.deepcopy(
+            self.fixture("decision-record", "decision-record-1.0.0")
+        )
+        exact = copy.deepcopy(
+            self.fixture(
+                "decision-record", "decision-record-1.1.0-historian-lesson"
+            )
+        )
+        no_lesson = self.fixture(
+            "decision-record", "decision-record-1.1.0-no-lesson"
+        )
+
+        self.assertEqual([], list(validator.iter_errors(legacy)))
+        self.assertEqual([], list(validator.iter_errors(exact)))
+        self.assertEqual([], list(validator.iter_errors(no_lesson)))
+
+        legacy["historian_lesson_version_refs"] = []
+        self.assertTrue(list(validator.iter_errors(legacy)))
+
+        missing = copy.deepcopy(exact)
+        del missing["historian_lesson_version_refs"]
+        self.assertTrue(list(validator.iter_errors(missing)))
+
+        duplicate = copy.deepcopy(exact)
+        duplicate["historian_lesson_version_refs"].append(
+            duplicate["historian_lesson_version_refs"][0]
+        )
+        self.assertTrue(list(validator.iter_errors(duplicate)))
+
+    def test_decision_1_1_uses_utc_z_without_tightening_1_0_clocks(self) -> None:
+        validator = validator_for(self.contracts["decision-record"]["schema_path"])
+        legacy = copy.deepcopy(
+            self.fixture("decision-record", "decision-record-1.0.0")
+        )
+        current = copy.deepcopy(
+            self.fixture(
+                "decision-record", "decision-record-1.1.0-historian-lesson"
+            )
+        )
+        for clock in ("recorded_at", "review_by"):
+            legacy_with_offset = copy.deepcopy(legacy)
+            legacy_with_offset[clock] = legacy_with_offset[clock].replace(
+                "Z", "+00:00"
+            )
+            current_with_offset = copy.deepcopy(current)
+            current_with_offset[clock] = current_with_offset[clock].replace(
+                "Z", "+00:00"
+            )
+            with self.subTest(clock=clock):
+                self.assertEqual(
+                    [], list(validator.iter_errors(legacy_with_offset))
+                )
+                self.assertTrue(list(validator.iter_errors(current_with_offset)))
+
+    def test_historian_lesson_active_and_retired_shapes_are_frozen(self) -> None:
+        validator = validator_for(self.contracts["historian-lesson"]["schema_path"])
+        active = self.fixture(
+            "historian-lesson", "historian-lesson-1.0.0-initial"
+        )
+        retired = self.fixture(
+            "historian-lesson", "historian-lesson-1.0.0-retired"
+        )
+        self.assertEqual([], list(validator.iter_errors(active)))
+        self.assertEqual([], list(validator.iter_errors(retired)))
+        self.assertEqual("active", active["state"])
+        self.assertEqual("retired", retired["state"])
+        self.assertNotIn("content_ref", retired)
+
     def test_historical_length_boundaries_remain_accepted(self) -> None:
         cases = [
             ("report-manifest", "report-manifest-1.0.0-complete", ("report_id",), "R" * 160),

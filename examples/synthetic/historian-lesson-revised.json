@@ -1,0 +1,31 @@
+{
+  "schema_version": "1.0.0",
+  "lesson_series_id": "hls_SYNTH000000000001",
+  "lesson_version_ref": "hlv_SYNTH000000000102",
+  "revision": 2,
+  "state": "active",
+  "prior_version_ref": "hlv_SYNTH000000000101",
+  "source_reviews": [
+    {
+      "review_ref": "orv_SYNTH000000000012",
+      "finalized_at": "2099-02-01T10:00:00Z"
+    }
+  ],
+  "clocks": {
+    "data_as_of": "2099-02-01T09:00:00Z",
+    "approved_at": "2099-02-01T11:00:00Z",
+    "ingested_at": "2099-02-01T12:00:00Z",
+    "generated_at": "2099-02-01T13:00:00Z"
+  },
+  "approval": {
+    "authority_type": "human",
+    "status": "approved",
+    "receipt": "apr_SYNTH000000000102"
+  },
+  "ingestion": {
+    "status": "ingested",
+    "receipt": "ing_SYNTH000000000102",
+    "mode": "advisory_only"
+  },
+  "content_ref": "ref_SYNTH000000000202"
+}
