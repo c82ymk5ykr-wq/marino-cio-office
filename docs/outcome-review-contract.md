@@ -193,3 +193,14 @@ categorically confirm:
 Only the adopted version and categorical conformance classes may be recorded
 publicly. Mappings, real fixtures, counts, logs, screenshots, storage
 references, and detailed evidence remain private.
+
+## Downstream learning controls
+
+Outcome reviews are eligible inputs to the private derived measurements in
+[`learning-loop-metrics.md`](learning-loop-metrics.md), but only through a
+valid, uniquely resolved append-only chain. A favorable or adverse outcome can
+never determine timing, invalidation, process quality, or lesson approval.
+
+An outcome review does not itself contain a lesson or approval. A lesson may
+enter future Chief Historian review only through the separate, human-approved
+and versioned [`historian-lesson` contract](historian-lesson-contract.md).

@@ -56,8 +56,12 @@ See [the public/private boundary](docs/public-private-boundary.md) and
 - [Decision record schema](schemas/v1/decision-record.schema.json)
 - [Outcome-review contract](docs/outcome-review-contract.md)
 - [Outcome-review schema](schemas/v1/outcome-review.schema.json)
+- [Learning-loop metrics](docs/learning-loop-metrics.md)
+- [Chief Historian lesson contract](docs/historian-lesson-contract.md)
+- [Chief Historian lesson schema](schemas/v1/historian-lesson.schema.json)
 - [Daily decision report template](templates/daily-decision-report.md)
 - [Outcome-review template](templates/outcome-review.md)
+- [Chief Historian lesson template](templates/historian-lesson.md)
 - [Roadmap](ROADMAP.md)
 - [Architecture decisions](docs/decisions/README.md)
 

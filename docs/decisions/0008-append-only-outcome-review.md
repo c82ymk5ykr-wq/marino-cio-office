@@ -85,8 +85,8 @@ fixtures only.
   storage;
 - public validation can enforce shape, state coherence, clocks, qualitative
   attribution, and prohibited fields without production data; and
-- idea novelty metrics and Chief Historian lesson approval or ingestion remain
-  later Phase 4 outcomes.
+- idea novelty metrics and Chief Historian lesson approval or ingestion are
+  governed by the later Phase 4 decisions that adopt those contracts.
 
 ## Verification
 

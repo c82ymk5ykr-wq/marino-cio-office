@@ -47,6 +47,17 @@ synthetic.
 - Apply `docs/outcome-review-contract.md`: preserve the ex-ante decision,
   append hindsight separately, and keep outcome, process, timing,
   invalidation, and qualitative attribution independent.
+- Apply `docs/learning-loop-metrics.md`: freeze the idea and decision cohorts,
+  retain every raw numerator and denominator, and count missing, invalid, or
+  unresolved history rather than selecting a convenient record. A first run is
+  a baseline, not proof that every observed idea is new.
+- Apply `docs/historian-lesson-contract.md`: only a terminal, active,
+  human-approved and successfully ingested lesson version may enter Chief
+  Historian review. Lesson controls are advisory; they never edit prompts,
+  code, configuration, schemas, weights, or historical decisions.
+- A decision-record 1.1 artifact lists only the exact historian lesson versions
+  materially used in that decision's review. An empty list is honest when no
+  approved lesson applies, and a later lesson never changes an earlier record.
 - Apply `docs/schema-compatibility-policy.md` and keep `schemas/v1/` backward
   compatible. Breaking changes require a new schema version directory and an
   Architecture Decision Record (ADR).
@@ -56,6 +67,10 @@ synthetic.
 Report generation should still produce an honest degraded or failed manifest
 when an input or persistence step fails. A temporary download link is never a
 durable storage outcome.
+
+Populated learning measurements, lesson controls, content, approval or
+ingestion receipts, review windows, counts, rates, and usage history remain
+private. Public validation uses invented fixtures only.
 
 ## Change workflow
 

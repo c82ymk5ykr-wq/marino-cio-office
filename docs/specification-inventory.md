@@ -48,6 +48,10 @@ summarized. The governing boundary is
 | Outcome, decision quality, process quality, timing, invalidation trigger, invalidation response, and attribution are independent axes | [Outcome-review contract](outcome-review-contract.md) and [outcome-review schema](../schemas/v1/outcome-review.schema.json) | Invented adverse-disciplined and favorable-undisciplined fixtures prevent outcome from determining process quality |
 | Missing review history is partial, unavailable, unknown, or unverified rather than reconstructed | [Outcome-review contract](outcome-review-contract.md) | Schema state branches and semantic validation reject classifications or attribution unsupported by the declared review state |
 | Populated outcome reviews and private conformance evidence remain private | [Public/private boundary](public-private-boundary.md) and [ADR 0008](decisions/0008-append-only-outcome-review.md) | Public CI registers only invented synthetic outcome-review fixtures |
+| Learning measurements use frozen cohorts, exact denominators, and explicit exclusions rather than a composite score | [Learning-loop metrics](learning-loop-metrics.md) and [ADR 0009](decisions/0009-deterministic-learning-loop-measurement.md) | Invented truth tables verify idea, timing, invalidation, terminal-chain, and zero-denominator behavior |
+| Missing, invalid, branched, cyclic, or otherwise unresolved review history is counted and excluded rather than resolved by timestamp | [Learning-loop metrics](learning-loop-metrics.md) | Deterministic chain cases require exactly one identity-consistent terminal review per target decision |
+| Only a terminal active lesson version with human approval and successful Chief Historian ingestion is eligible for future review | [Chief Historian lesson contract](historian-lesson-contract.md) and [ADR 0010](decisions/0010-human-approved-versioned-historian-lessons.md) | Metadata-only active, revised, and retired fixtures exercise append-only eligibility and receipt rules |
+| Future decisions trace the exact approved lesson versions materially used without rewriting earlier decisions | [Decision-record schema](../schemas/v1/decision-record.schema.json) and [Chief Historian lesson contract](historian-lesson-contract.md) | Decision-record 1.1 carries exact version refs while retained 1.0 artifacts remain valid |
 
 ## Normalized ambiguities
 
@@ -71,6 +75,14 @@ summarized. The governing boundary is
 - No absent decision was reconstructed, and no raw conversation or private
   implementation detail was moved into Git history.
 
-Private outcome-review producer/consumer conformance, novelty and repeat-quality
-measurement, and Chief Historian lesson ingestion remain controlled Phase 4
-work.
+## Phase 4 disposition
+
+- `outcome-review 1.0.0` preserves immutable ex-ante decisions and keeps its
+  independent review axes private.
+- Learning-loop measurement reuses adopted idea and review contracts, retains
+  raw denominators and exclusions, and publishes no live aggregate.
+- `historian-lesson 1.0.0` and `decision-record 1.1.0` make human approval,
+  ingestion, supersession, retirement, and future-decision usage traceable.
+- Private producer, measurement, approval, ingestion, and decision-trace
+  conformance is recorded categorically; mappings, evidence, values, content,
+  receipts, and history remain private.

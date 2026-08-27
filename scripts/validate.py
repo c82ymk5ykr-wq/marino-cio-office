@@ -3,15 +3,32 @@
 
 from __future__ import annotations
 
+import copy
 import json
 import math
 import re
 import subprocess
 import sys
+from collections.abc import Mapping
 from datetime import datetime
 from pathlib import Path
 from statistics import median
 from urllib.parse import unquote
+
+try:
+    from scripts.learning_metrics import (
+        LearningMetricError,
+        assert_metric_claim,
+        measure_idea_cohort,
+        measure_outcome_review_cohort,
+    )
+except ModuleNotFoundError:  # Direct execution uses the sibling module path.
+    from learning_metrics import (  # type: ignore[no-redef]
+        LearningMetricError,
+        assert_metric_claim,
+        measure_idea_cohort,
+        measure_outcome_review_cohort,
+    )
 
 try:
     from jsonschema import Draft202012Validator, FormatChecker
@@ -46,9 +63,13 @@ REQUIRED_FILES = {
     "docs/decisions/0006-deterministic-report-acceptance.md",
     "docs/decisions/0007-private-contract-adoption-attestation.md",
     "docs/decisions/0008-append-only-outcome-review.md",
+    "docs/decisions/0009-deterministic-learning-loop-measurement.md",
+    "docs/decisions/0010-human-approved-versioned-historian-lessons.md",
     "docs/decisions/README.md",
     "docs/contract-vocabulary.md",
+    "docs/historian-lesson-contract.md",
     "docs/idea-lineage-metrics.md",
+    "docs/learning-loop-metrics.md",
     "docs/operating-model.md",
     "docs/outcome-review-contract.md",
     "docs/public-private-boundary.md",
@@ -56,7 +77,11 @@ REQUIRED_FILES = {
     "docs/schema-compatibility-policy.md",
     "docs/specification-inventory.md",
     "docs/universe-completion-gates.md",
+    "examples/synthetic/decision-record-historian-lesson.json",
     "examples/synthetic/decision-record.json",
+    "examples/synthetic/historian-lesson-initial.json",
+    "examples/synthetic/historian-lesson-retired.json",
+    "examples/synthetic/historian-lesson-revised.json",
     "examples/synthetic/investment-idea.json",
     "examples/synthetic/investment-idea-legacy-1.0.json",
     "examples/synthetic/investment-idea-materially-updated.json",
@@ -64,6 +89,7 @@ REQUIRED_FILES = {
     "examples/synthetic/investment-idea-repeat-unchanged.json",
     "examples/synthetic/investment-idea-stale-repeat.json",
     "examples/synthetic/investment-idea-unverified-lineage.json",
+    "examples/synthetic/learning-metrics-cases.json",
     "examples/synthetic/outcome-review-adverse-disciplined.json",
     "examples/synthetic/outcome-review-favorable-undisciplined.json",
     "examples/synthetic/outcome-review-invalidation-delayed.json",
@@ -77,19 +103,24 @@ REQUIRED_FILES = {
     "examples/synthetic/universe-completion-cases.json",
     "requirements-validation.txt",
     "schemas/v1/decision-record.schema.json",
+    "schemas/v1/historian-lesson.schema.json",
     "schemas/v1/investment-idea.schema.json",
     "schemas/v1/outcome-review.schema.json",
     "schemas/v1/report-manifest.schema.json",
     "scripts/validate.py",
+    "scripts/learning_metrics.py",
     "templates/architecture-decision.md",
     "templates/daily-decision-report.md",
     "templates/decision-record.md",
+    "templates/historian-lesson.md",
     "templates/outcome-review.md",
     "tests/compatibility/v1-fixtures.json",
     "tests/schema_helpers.py",
     "tests/test_report_acceptance.py",
     "tests/test_schema_compatibility.py",
     "tests/test_schema_validation.py",
+    "tests/test_historian_lesson.py",
+    "tests/test_learning_metrics.py",
     "tests/test_outcome_review.py",
 }
 
@@ -98,6 +129,7 @@ SCHEMA_FIXTURE_FAMILIES = {
     Path("schemas/v1/investment-idea.schema.json"): "investment-idea",
     Path("schemas/v1/decision-record.schema.json"): "decision-record",
     Path("schemas/v1/outcome-review.schema.json"): "outcome-review",
+    Path("schemas/v1/historian-lesson.schema.json"): "historian-lesson",
 }
 
 FORBIDDEN_DIRECTORIES = {
@@ -166,12 +198,15 @@ def parse_utc_timestamp(value: object, location: str, errors: list[str]) -> None
 def walk_timestamps(value: object, location: str, errors: list[str]) -> None:
     timestamp_keys = {
         "checked_at",
+        "approved_at",
         "data_as_of",
         "decision_recorded_at",
         "evaluation_started_at",
         "evidence_cutoff_at",
         "first_seen_at",
+        "finalized_at",
         "generated_at",
+        "ingested_at",
         "last_seen_at",
         "last_material_change_at",
         "membership_as_of",
@@ -346,6 +381,7 @@ def validate_json_schema_examples(
                 )
 
     exempt_fixture_paths = {
+        Path("examples/synthetic/learning-metrics-cases.json"),
         Path("examples/synthetic/report-acceptance-cases.json"),
         Path("examples/synthetic/universe-completion-cases.json"),
     }
@@ -2107,6 +2143,802 @@ def validate_outcome_review_fixture_coverage(
         )
 
 
+HISTORIAN_LESSON_FORBIDDEN_KEYS = {
+    "account",
+    "accountdata",
+    "accountid",
+    "aggregate",
+    "aggregates",
+    "allocation",
+    "allocations",
+    "approvalidentity",
+    "client",
+    "clientdata",
+    "clientid",
+    "code",
+    "configuration",
+    "contenthash",
+    "contenturl",
+    "deployment",
+    "deploymentaction",
+    "deploymentactions",
+    "endpoint",
+    "filesystempath",
+    "hash",
+    "holding",
+    "holdings",
+    "lessonbody",
+    "mapping",
+    "mappings",
+    "pandl",
+    "path",
+    "payloadhash",
+    "performance",
+    "pnl",
+    "portfolio",
+    "price",
+    "prices",
+    "prompt",
+    "provider",
+    "providers",
+    "return",
+    "returns",
+    "schema",
+    "sourcecode",
+    "storagepath",
+    "threshold",
+    "thresholds",
+    "transaction",
+    "transactions",
+    "uri",
+    "url",
+    "usage",
+    "usagecount",
+    "weight",
+    "weights",
+}
+
+
+def normalize_historian_lesson_key(value: str) -> str:
+    """Normalize a JSON key for defensive historian-lesson boundary checks."""
+
+    return re.sub(r"[^a-z0-9]+", "", value.lower().replace("&", "and"))
+
+
+def validate_historian_lesson_payload_boundary(
+    value: object, location: str, errors: list[str]
+) -> None:
+    """Reject executable, private, performance, identity, and location fields."""
+
+    if isinstance(value, dict):
+        for key, child in value.items():
+            child_location = f"{location}.{key}"
+            if normalize_historian_lesson_key(key) in HISTORIAN_LESSON_FORBIDDEN_KEYS:
+                errors.append(
+                    f"{child_location}: prohibited private, executable, identity, "
+                    "performance, location, hash, or usage field"
+                )
+            validate_historian_lesson_payload_boundary(child, child_location, errors)
+    elif isinstance(value, list):
+        for index, child in enumerate(value):
+            validate_historian_lesson_payload_boundary(
+                child, f"{location}[{index}]", errors
+            )
+
+
+def validate_historian_lesson(
+    lesson: object, path: Path, errors: list[str]
+) -> None:
+    """Validate cross-field semantics for one metadata-only lesson revision."""
+
+    location = str(path)
+    require_keys(
+        lesson,
+        {
+            "schema_version",
+            "lesson_series_id",
+            "lesson_version_ref",
+            "revision",
+            "state",
+            "source_reviews",
+            "clocks",
+            "approval",
+            "ingestion",
+        },
+        location,
+        errors,
+    )
+    if not isinstance(lesson, dict):
+        return
+
+    validate_historian_lesson_payload_boundary(lesson, location, errors)
+
+    if lesson.get("schema_version") != "1.0.0":
+        errors.append(f"{location}.schema_version: expected 1.0.0")
+
+    revision = lesson.get("revision")
+    state = lesson.get("state")
+    prior_ref = lesson.get("prior_version_ref")
+    content_ref = lesson.get("content_ref")
+    version_ref = lesson.get("lesson_version_ref")
+
+    if revision == 1:
+        if prior_ref is not None:
+            errors.append(f"{location}.prior_version_ref: revision 1 has no predecessor")
+        if state != "active" or not isinstance(content_ref, str):
+            errors.append(f"{location}: revision 1 must be active with content")
+    elif isinstance(revision, int) and not isinstance(revision, bool) and revision > 1:
+        if not isinstance(prior_ref, str):
+            errors.append(
+                f"{location}.prior_version_ref: revision {revision} needs a predecessor"
+            )
+
+    if isinstance(version_ref, str) and version_ref == prior_ref:
+        errors.append(f"{location}.prior_version_ref: revision cannot refer to itself")
+    if state == "active" and not isinstance(content_ref, str):
+        errors.append(f"{location}.content_ref: active revision requires content")
+    if state == "retired":
+        if content_ref is not None:
+            errors.append(f"{location}.content_ref: retired tombstone cannot have content")
+        if not isinstance(revision, int) or isinstance(revision, bool) or revision < 2:
+            errors.append(f"{location}.revision: retirement requires revision N > 1")
+
+    source_reviews = lesson.get("source_reviews")
+    review_refs: list[str] = []
+    review_finalized_times: list[tuple[int, datetime]] = []
+    if isinstance(source_reviews, list):
+        for index, review in enumerate(source_reviews):
+            if not isinstance(review, dict):
+                continue
+            review_ref = review.get("review_ref")
+            if isinstance(review_ref, str):
+                review_refs.append(review_ref)
+            finalized_at = timestamp_value(review.get("finalized_at"))
+            if finalized_at is None:
+                errors.append(
+                    f"{location}.source_reviews[{index}].finalized_at: "
+                    "invalid UTC timestamp"
+                )
+            else:
+                review_finalized_times.append((index, finalized_at))
+    if len(review_refs) != len(set(review_refs)):
+        errors.append(f"{location}.source_reviews: duplicate review reference")
+
+    clocks = lesson.get("clocks")
+    clock_names = ("data_as_of", "approved_at", "ingested_at", "generated_at")
+    parsed_clocks: dict[str, datetime] = {}
+    if isinstance(clocks, dict):
+        for name in clock_names:
+            parsed = timestamp_value(clocks.get(name))
+            if parsed is None:
+                errors.append(f"{location}.clocks.{name}: invalid UTC timestamp")
+            else:
+                parsed_clocks[name] = parsed
+        for earlier_name, later_name in zip(clock_names, clock_names[1:]):
+            earlier = parsed_clocks.get(earlier_name)
+            later = parsed_clocks.get(later_name)
+            if earlier is not None and later is not None and earlier > later:
+                errors.append(
+                    f"{location}.clocks: {earlier_name} cannot be after {later_name}"
+                )
+    else:
+        errors.append(f"{location}.clocks: expected an object")
+
+    data_as_of = parsed_clocks.get("data_as_of")
+    approved_at = parsed_clocks.get("approved_at")
+    if (
+        data_as_of is not None
+        and review_finalized_times
+        and data_as_of > max(value for _, value in review_finalized_times)
+    ):
+        errors.append(
+            f"{location}.clocks.data_as_of: cannot exceed every linked review's "
+            "finalized_at"
+        )
+    for index, finalized_at in review_finalized_times:
+        if approved_at is not None and finalized_at > approved_at:
+            errors.append(
+                f"{location}.source_reviews[{index}].finalized_at: linked review "
+                "must be finalized before approval"
+            )
+
+    public_fixture = (
+        "examples/synthetic/" in location or "tests/compatibility/" in location
+    )
+    if public_fixture:
+        expected_prefixes = (
+            (lesson.get("lesson_series_id"), "hls_SYNTH", "lesson_series_id"),
+            (version_ref, "hlv_SYNTH", "lesson_version_ref"),
+            (prior_ref, "hlv_SYNTH", "prior_version_ref"),
+            (content_ref, "ref_SYNTH", "content_ref"),
+        )
+        for value, prefix, field in expected_prefixes:
+            if value is not None and (
+                not isinstance(value, str) or not value.startswith(prefix)
+            ):
+                errors.append(f"{location}.{field}: public fixture must be visibly synthetic")
+        for review_ref in review_refs:
+            if not review_ref.startswith("orv_SYNTH"):
+                errors.append(
+                    f"{location}.source_reviews: public references must be visibly synthetic"
+                )
+        approval = lesson.get("approval")
+        ingestion = lesson.get("ingestion")
+        approval_receipt = approval.get("receipt") if isinstance(approval, dict) else None
+        ingestion_receipt = (
+            ingestion.get("receipt") if isinstance(ingestion, dict) else None
+        )
+        if not isinstance(approval_receipt, str) or not approval_receipt.startswith(
+            "apr_SYNTH"
+        ):
+            errors.append(
+                f"{location}.approval.receipt: public fixture must be visibly synthetic"
+            )
+        if not isinstance(ingestion_receipt, str) or not ingestion_receipt.startswith(
+            "ing_SYNTH"
+        ):
+            errors.append(
+                f"{location}.ingestion.receipt: public fixture must be visibly synthetic"
+            )
+
+
+def validate_historian_lesson_chain(
+    lessons: list[tuple[Path, object]], errors: list[str]
+) -> None:
+    """Validate an append-only, linear, receipt-unique lesson revision corpus."""
+
+    usable = [(path, lesson) for path, lesson in lessons if isinstance(lesson, dict)]
+    by_version: dict[str, tuple[Path, dict[str, object]]] = {}
+    approval_receipts: dict[str, Path] = {}
+    ingestion_receipts: dict[str, Path] = {}
+    all_receipts: dict[str, Path] = {}
+    content_refs: dict[str, Path] = {}
+
+    def register_unique(
+        value: object,
+        location: Path,
+        field: str,
+        registry: dict[str, Path],
+    ) -> None:
+        if not isinstance(value, str):
+            return
+        prior_path = registry.get(value)
+        if prior_path is not None:
+            errors.append(
+                f"{location}.{field}: reused value also present in {prior_path}"
+            )
+        else:
+            registry[value] = location
+
+    for path, lesson in usable:
+        version_ref = lesson.get("lesson_version_ref")
+        if isinstance(version_ref, str):
+            if version_ref in by_version:
+                errors.append(
+                    f"{path}.lesson_version_ref: duplicate version reference"
+                )
+            else:
+                by_version[version_ref] = (path, lesson)
+
+        approval = lesson.get("approval")
+        approval_receipt = approval.get("receipt") if isinstance(approval, dict) else None
+        ingestion = lesson.get("ingestion")
+        ingestion_receipt = (
+            ingestion.get("receipt") if isinstance(ingestion, dict) else None
+        )
+        register_unique(approval_receipt, path, "approval.receipt", approval_receipts)
+        register_unique(
+            ingestion_receipt, path, "ingestion.receipt", ingestion_receipts
+        )
+        register_unique(approval_receipt, path, "approval.receipt", all_receipts)
+        register_unique(ingestion_receipt, path, "ingestion.receipt", all_receipts)
+        if lesson.get("state") == "active":
+            register_unique(lesson.get("content_ref"), path, "content_ref", content_refs)
+
+    children: dict[str, list[str]] = {}
+    series_records: dict[str, list[tuple[Path, dict[str, object]]]] = {}
+    for path, lesson in usable:
+        series_id = lesson.get("lesson_series_id")
+        version_ref = lesson.get("lesson_version_ref")
+        prior_ref = lesson.get("prior_version_ref")
+        revision = lesson.get("revision")
+        if isinstance(series_id, str):
+            series_records.setdefault(series_id, []).append((path, lesson))
+        if not isinstance(prior_ref, str) or not isinstance(version_ref, str):
+            continue
+        children.setdefault(prior_ref, []).append(version_ref)
+        predecessor = by_version.get(prior_ref)
+        if predecessor is None:
+            errors.append(f"{path}.prior_version_ref: predecessor does not resolve")
+            continue
+        predecessor_path, predecessor_lesson = predecessor
+        if predecessor_lesson.get("lesson_series_id") != series_id:
+            errors.append(f"{path}.prior_version_ref: cross-series predecessor")
+        predecessor_revision = predecessor_lesson.get("revision")
+        if (
+            not isinstance(revision, int)
+            or isinstance(revision, bool)
+            or not isinstance(predecessor_revision, int)
+            or isinstance(predecessor_revision, bool)
+            or predecessor_revision != revision - 1
+        ):
+            errors.append(
+                f"{path}.prior_version_ref: predecessor must be exact revision N-1"
+            )
+        if predecessor_lesson.get("state") == "retired":
+            errors.append(
+                f"{path}.prior_version_ref: retired terminal cannot have a successor"
+            )
+
+        predecessor_clocks = predecessor_lesson.get("clocks")
+        current_clocks = lesson.get("clocks")
+        if isinstance(predecessor_clocks, dict) and isinstance(current_clocks, dict):
+            predecessor_ingested = timestamp_value(predecessor_clocks.get("ingested_at"))
+            current_ingested = timestamp_value(current_clocks.get("ingested_at"))
+            if (
+                predecessor_ingested is not None
+                and current_ingested is not None
+                and current_ingested <= predecessor_ingested
+            ):
+                errors.append(
+                    f"{path}.clocks.ingested_at: successor must be ingested after "
+                    f"{predecessor_path}"
+                )
+
+    for prior_ref, child_refs in children.items():
+        if len(child_refs) > 1:
+            errors.append(f"historian lesson chain branches after {prior_ref}")
+
+    for series_id, records in series_records.items():
+        revisions = [
+            lesson.get("revision")
+            for _, lesson in records
+            if isinstance(lesson.get("revision"), int)
+            and not isinstance(lesson.get("revision"), bool)
+        ]
+        if revisions:
+            expected = set(range(1, max(revisions) + 1))
+            actual = set(revisions)
+            if actual != expected or len(revisions) != len(actual):
+                errors.append(f"historian lesson series {series_id}: revision gap or duplicate")
+
+        series_version_refs = {
+            lesson.get("lesson_version_ref")
+            for _, lesson in records
+            if isinstance(lesson.get("lesson_version_ref"), str)
+        }
+        referenced = {
+            lesson.get("prior_version_ref")
+            for _, lesson in records
+            if isinstance(lesson.get("prior_version_ref"), str)
+            and lesson.get("prior_version_ref") in series_version_refs
+        }
+        terminals = series_version_refs - referenced
+        if len(terminals) != 1:
+            errors.append(
+                f"historian lesson series {series_id}: expected exactly one terminal revision"
+            )
+        for path, lesson in records:
+            if (
+                lesson.get("state") == "retired"
+                and lesson.get("lesson_version_ref") not in terminals
+            ):
+                errors.append(f"{path}.state: retired revision must be terminal")
+
+    reported_cycles: set[str] = set()
+    for start_ref in by_version:
+        current_ref = start_ref
+        visited: set[str] = set()
+        while current_ref in by_version:
+            if current_ref in visited:
+                if current_ref not in reported_cycles:
+                    errors.append(
+                        f"historian lesson chain contains a cycle at {current_ref}"
+                    )
+                    reported_cycles.add(current_ref)
+                break
+            visited.add(current_ref)
+            current_lesson = by_version[current_ref][1]
+            prior_ref = current_lesson.get("prior_version_ref")
+            if not isinstance(prior_ref, str):
+                break
+            current_ref = prior_ref
+
+
+def validate_decision_historian_lesson_refs(
+    decision: object,
+    lessons: list[tuple[Path, object]],
+    path: Path,
+    errors: list[str],
+) -> None:
+    """Validate exact lesson selection at an immutable decision timestamp."""
+
+    location = str(path)
+    if not isinstance(decision, dict):
+        errors.append(f"{location}: expected a JSON object")
+        return
+
+    schema_version = decision.get("schema_version")
+    refs = decision.get("historian_lesson_version_refs")
+    if schema_version == "1.0.0":
+        if "historian_lesson_version_refs" in decision:
+            errors.append(
+                f"{location}.historian_lesson_version_refs: forbidden in "
+                "decision-record 1.0.0"
+            )
+        return
+    if schema_version != "1.1.0":
+        return
+    if not isinstance(refs, list):
+        errors.append(
+            f"{location}.historian_lesson_version_refs: required array for "
+            "decision-record 1.1.0"
+        )
+        return
+
+    string_refs = [value for value in refs if isinstance(value, str)]
+    if len(string_refs) != len(set(string_refs)):
+        errors.append(
+            f"{location}.historian_lesson_version_refs: duplicate exact version reference"
+        )
+    decision_time = timestamp_value(decision.get("recorded_at"))
+    review_time = timestamp_value(decision.get("review_by"))
+    if decision_time is None:
+        errors.append(f"{location}.recorded_at: invalid UTC timestamp")
+    if review_time is None:
+        errors.append(f"{location}.review_by: invalid UTC timestamp")
+    if (
+        decision_time is not None
+        and review_time is not None
+        and review_time < decision_time
+    ):
+        errors.append(f"{location}.review_by: cannot precede recorded_at")
+    if not string_refs:
+        return
+    if decision_time is None:
+        return
+
+    usable = [lesson for _, lesson in lessons if isinstance(lesson, dict)]
+    by_version = {
+        lesson.get("lesson_version_ref"): lesson
+        for lesson in usable
+        if isinstance(lesson.get("lesson_version_ref"), str)
+    }
+    for selected_ref in string_refs:
+        selected = by_version.get(selected_ref)
+        if selected is None:
+            errors.append(
+                f"{location}.historian_lesson_version_refs: unresolved exact "
+                f"version {selected_ref!r}"
+            )
+            continue
+
+        selected_clocks = selected.get("clocks")
+        selected_ingested = (
+            timestamp_value(selected_clocks.get("ingested_at"))
+            if isinstance(selected_clocks, dict)
+            else None
+        )
+        if selected_ingested is None or selected_ingested > decision_time:
+            errors.append(
+                f"{location}.historian_lesson_version_refs: {selected_ref!r} "
+                "was not ingested by the decision time"
+            )
+            continue
+
+        series_id = selected.get("lesson_series_id")
+        available = []
+        for lesson in usable:
+            if lesson.get("lesson_series_id") != series_id:
+                continue
+            clocks = lesson.get("clocks")
+            ingested_at = (
+                timestamp_value(clocks.get("ingested_at"))
+                if isinstance(clocks, dict)
+                else None
+            )
+            revision = lesson.get("revision")
+            if (
+                ingested_at is not None
+                and ingested_at <= decision_time
+                and isinstance(revision, int)
+                and not isinstance(revision, bool)
+            ):
+                available.append(lesson)
+        if not available:
+            errors.append(
+                f"{location}.historian_lesson_version_refs: no eligible revision "
+                f"for series {series_id!r}"
+            )
+            continue
+        terminal = max(available, key=lambda lesson: lesson["revision"])
+        if terminal.get("lesson_version_ref") != selected_ref:
+            errors.append(
+                f"{location}.historian_lesson_version_refs: {selected_ref!r} is a "
+                "stale version at the decision time"
+            )
+            continue
+        if terminal.get("state") != "active":
+            errors.append(
+                f"{location}.historian_lesson_version_refs: retired lesson "
+                f"{selected_ref!r} is not selectable"
+            )
+
+
+LEARNING_METRIC_IDENTIFIER_KEYS = {
+    "decision_ref",
+    "idea_ref",
+    "prior_review_ref",
+    "review_id",
+}
+
+LEARNING_METRIC_FORBIDDEN_KEYS = {
+    "account",
+    "allocation",
+    "asset",
+    "benchmark",
+    "client",
+    "deploymentaction",
+    "holding",
+    "performance",
+    "pnl",
+    "portfolio",
+    "price",
+    "return",
+    "symbol",
+    "ticker",
+    "transaction",
+    "weight",
+}
+
+
+def validate_learning_metric_fixture_boundary(
+    value: object, location: str, errors: list[str], key: str | None = None
+) -> None:
+    """Keep the derived-metric truth table visibly synthetic and public-safe."""
+
+    if isinstance(value, dict):
+        for child_key, child in value.items():
+            normalized_key = re.sub(r"[^a-z0-9]+", "", child_key.lower())
+            child_location = f"{location}.{child_key}"
+            if normalized_key in LEARNING_METRIC_FORBIDDEN_KEYS:
+                errors.append(
+                    f"{child_location}: prohibited private, performance, "
+                    "deployment, or weighted-score field"
+                )
+            validate_learning_metric_fixture_boundary(
+                child, child_location, errors, child_key
+            )
+        return
+    if isinstance(value, list):
+        for index, child in enumerate(value):
+            validate_learning_metric_fixture_boundary(
+                child, f"{location}[{index}]", errors, key
+            )
+        return
+    if key in LEARNING_METRIC_IDENTIFIER_KEYS and (
+        not isinstance(value, str) or "SYNTH" not in value
+    ):
+        errors.append(f"{location}: public metric identifier must be visibly synthetic")
+
+
+def validate_learning_metric_cases(
+    parsed: dict[Path, object],
+    source_statuses: dict[str, str],
+    errors: list[str],
+) -> None:
+    """Reproduce exact learning-loop truth tables with full input validation."""
+
+    path = Path("examples/synthetic/learning-metrics-cases.json")
+    cases = parsed.get(path)
+    require_keys(
+        cases,
+        {"spec_version", "idea_balanced", "review_balanced", "chain_exclusions"},
+        str(path),
+        errors,
+    )
+    if not isinstance(cases, dict):
+        return
+    if cases.get("spec_version") != "1.0.0":
+        errors.append(f"{path}.spec_version: expected 1.0.0")
+    validate_learning_metric_fixture_boundary(cases, str(path), errors)
+
+    if Draft202012Validator is None or FormatChecker is None:
+        return
+    idea_schema = parsed.get(Path("schemas/v1/investment-idea.schema.json"))
+    review_schema = parsed.get(Path("schemas/v1/outcome-review.schema.json"))
+    if not isinstance(idea_schema, dict) or not isinstance(review_schema, dict):
+        errors.append(f"{path}: metric input schemas could not be loaded")
+        return
+    idea_schema_validator = Draft202012Validator(
+        idea_schema, format_checker=FormatChecker()
+    )
+    review_schema_validator = Draft202012Validator(
+        review_schema, format_checker=FormatChecker()
+    )
+
+    def idea_is_valid(idea: Mapping[str, object]) -> bool:
+        semantic_errors: list[str] = []
+        validate_idea_fixture(
+            Path(f"{path}::generated-idea"),
+            idea,
+            source_statuses,
+            semantic_errors,
+        )
+        return not list(idea_schema_validator.iter_errors(idea)) and not semantic_errors
+
+    def review_is_valid(review: Mapping[str, object]) -> bool:
+        semantic_errors: list[str] = []
+        validate_outcome_review(
+            review,
+            Path(f"{path}::generated-review"),
+            semantic_errors,
+        )
+        return not list(review_schema_validator.iter_errors(review)) and not semantic_errors
+
+    def referenced_fixtures(section: object, section_name: str) -> list[dict[str, object]]:
+        if not isinstance(section, dict):
+            errors.append(f"{path}.{section_name}: expected an object")
+            return []
+        references = section.get("fixture_refs")
+        if not isinstance(references, list) or not references:
+            errors.append(f"{path}.{section_name}.fixture_refs: expected a non-empty array")
+            return []
+        resolved: list[dict[str, object]] = []
+        for index, name in enumerate(references):
+            location = f"{path}.{section_name}.fixture_refs[{index}]"
+            if (
+                not isinstance(name, str)
+                or not name
+                or Path(name).name != name
+                or Path(name).suffix != ".json"
+            ):
+                errors.append(f"{location}: expected one local synthetic JSON filename")
+                continue
+            fixture = parsed.get(Path("examples/synthetic") / name)
+            if not isinstance(fixture, dict):
+                errors.append(f"{location}: referenced fixture could not be loaded")
+                continue
+            resolved.append(fixture)
+        return resolved
+
+    idea_case = cases.get("idea_balanced")
+    ideas = referenced_fixtures(idea_case, "idea_balanced")
+    if ideas and isinstance(idea_case, dict):
+        try:
+            measured_ideas = measure_idea_cohort(
+                ideas, idea_validator=idea_is_valid
+            )
+            expected_ideas = idea_case.get("expected")
+            if not isinstance(expected_ideas, dict):
+                raise LearningMetricError("idea truth table expected result is missing")
+            assert_metric_claim(measured_ideas, expected_ideas)
+        except LearningMetricError as exc:
+            errors.append(f"{path}.idea_balanced: {exc}")
+
+    review_case = cases.get("review_balanced")
+    reviews = referenced_fixtures(review_case, "review_balanced")
+    if reviews and isinstance(review_case, dict):
+        predecessor_recipe = review_case.get("predecessor")
+        if not isinstance(predecessor_recipe, dict):
+            errors.append(f"{path}.review_balanced.predecessor: expected an object")
+        else:
+            clone_name = predecessor_recipe.get("clone_fixture_ref")
+            clone = (
+                parsed.get(Path("examples/synthetic") / clone_name)
+                if isinstance(clone_name, str) and Path(clone_name).name == clone_name
+                else None
+            )
+            if not isinstance(clone, dict):
+                errors.append(
+                    f"{path}.review_balanced.predecessor: clone fixture could not be loaded"
+                )
+            else:
+                predecessor = copy.deepcopy(clone)
+                predecessor["review_id"] = predecessor_recipe.get("review_id")
+                if predecessor_recipe.get("remove_prior_review_ref") is True:
+                    predecessor.pop("prior_review_ref", None)
+                reviews.append(predecessor)
+
+        targets: list[dict[str, str]] = []
+        seen_decisions: set[str] = set()
+        for review in reviews:
+            links = review.get("links")
+            if not isinstance(links, dict):
+                continue
+            decision_ref = links.get("decision_ref")
+            idea_ref = links.get("idea_ref")
+            if (
+                isinstance(decision_ref, str)
+                and isinstance(idea_ref, str)
+                and decision_ref not in seen_decisions
+            ):
+                seen_decisions.add(decision_ref)
+                targets.append(
+                    {"decision_ref": decision_ref, "idea_ref": idea_ref}
+                )
+        try:
+            measured_reviews = measure_outcome_review_cohort(
+                targets, reviews, review_validator=review_is_valid
+            )
+            expected_reviews = review_case.get("expected")
+            if not isinstance(expected_reviews, dict):
+                raise LearningMetricError("review truth table expected result is missing")
+            assert_metric_claim(measured_reviews, expected_reviews)
+        except LearningMetricError as exc:
+            errors.append(f"{path}.review_balanced: {exc}")
+
+    chain_case = cases.get("chain_exclusions")
+    if not isinstance(chain_case, dict):
+        errors.append(f"{path}.chain_exclusions: expected an object")
+        return
+    chain_targets = chain_case.get("targets")
+    fragments = chain_case.get("topology_fragments")
+    expected_cohort = chain_case.get("expected_review_cohort")
+    if (
+        not isinstance(chain_targets, list)
+        or not isinstance(fragments, list)
+        or not isinstance(expected_cohort, dict)
+    ):
+        errors.append(f"{path}.chain_exclusions: incomplete topology truth table")
+        return
+
+    adverse_base = parsed.get(
+        Path("examples/synthetic/outcome-review-adverse-disciplined.json")
+    )
+    followed_base = parsed.get(
+        Path("examples/synthetic/outcome-review-invalidation-followed.json")
+    )
+    if not isinstance(adverse_base, dict) or not isinstance(followed_base, dict):
+        errors.append(f"{path}.chain_exclusions: base review fixtures could not be loaded")
+        return
+
+    chain_reviews: list[dict[str, object]] = []
+    for index, fragment in enumerate(fragments):
+        location = f"{path}.chain_exclusions.topology_fragments[{index}]"
+        if not isinstance(fragment, dict):
+            errors.append(f"{location}: expected an object")
+            continue
+        trigger = fragment.get("invalidation_trigger")
+        response = fragment.get("invalidation_response")
+        timing = fragment.get("timing_discipline")
+        links = fragment.get("links")
+        if not all(isinstance(value, dict) for value in (trigger, response, timing, links)):
+            errors.append(f"{location}: incomplete measurement-relevant fields")
+            continue
+        assert isinstance(trigger, dict)
+        assert isinstance(response, dict)
+        assert isinstance(timing, dict)
+        assert isinstance(links, dict)
+        base = followed_base if trigger.get("state") == "triggered" else adverse_base
+        review = copy.deepcopy(base)
+        review["review_id"] = fragment.get("review_id")
+        review["links"]["decision_ref"] = links.get("decision_ref")
+        review["links"]["idea_ref"] = links.get("idea_ref")
+        review["timing_discipline"]["assessment_state"] = timing.get(
+            "assessment_state"
+        )
+        review["timing_discipline"]["classification"] = timing.get(
+            "classification"
+        )
+        review.pop("prior_review_ref", None)
+        if "prior_review_ref" in fragment:
+            review["prior_review_ref"] = fragment.get("prior_review_ref")
+        if review_is_valid(review) is not True:
+            errors.append(f"{location}: materialized review must fully validate")
+        chain_reviews.append(review)
+
+    try:
+        measured_chain = measure_outcome_review_cohort(
+            chain_targets,
+            chain_reviews,
+            review_validator=review_is_valid,
+        )
+        assert_metric_claim(measured_chain["review_cohort"], expected_cohort)
+    except LearningMetricError as exc:
+        errors.append(f"{path}.chain_exclusions: {exc}")
+
+
 def validate_examples(parsed: dict[Path, object], errors: list[str]) -> None:
     report_path = Path("examples/synthetic/report-manifest.json")
     legacy_report_path = Path("examples/synthetic/report-manifest-legacy-1.0.json")
@@ -2114,6 +2946,9 @@ def validate_examples(parsed: dict[Path, object], errors: list[str]) -> None:
     primary_idea_path = Path("examples/synthetic/investment-idea.json")
     legacy_idea_path = Path("examples/synthetic/investment-idea-legacy-1.0.json")
     decision_path = Path("examples/synthetic/decision-record.json")
+    historian_decision_path = Path(
+        "examples/synthetic/decision-record-historian-lesson.json"
+    )
     completion_path = Path("examples/synthetic/universe-completion-cases.json")
     compatibility_path = Path("tests/compatibility/v1-fixtures.json")
 
@@ -2121,7 +2956,16 @@ def validate_examples(parsed: dict[Path, object], errors: list[str]) -> None:
     legacy_report = parsed.get(legacy_report_path)
     acceptance = parsed.get(acceptance_path)
     decision = parsed.get(decision_path)
+    historian_decision = parsed.get(historian_decision_path)
     completion = parsed.get(completion_path)
+    decision_paths = sorted(
+        path
+        for path in parsed
+        if path.parent == Path("examples/synthetic")
+        and path.name.startswith("decision-record")
+        and path.suffix == ".json"
+    )
+    decisions = [(path, parsed.get(path)) for path in decision_paths]
     idea_paths = sorted(
         path
         for path in parsed
@@ -2138,6 +2982,16 @@ def validate_examples(parsed: dict[Path, object], errors: list[str]) -> None:
         and path.suffix == ".json"
     )
     outcome_reviews = [(path, parsed.get(path)) for path in outcome_paths]
+    historian_lesson_paths = sorted(
+        path
+        for path in parsed
+        if path.parent == Path("examples/synthetic")
+        and path.name.startswith("historian-lesson")
+        and path.suffix == ".json"
+    )
+    historian_lessons = [
+        (path, parsed.get(path)) for path in historian_lesson_paths
+    ]
 
     require_keys(
         report,
@@ -2185,9 +3039,10 @@ def validate_examples(parsed: dict[Path, object], errors: list[str]) -> None:
     for path, value in [
         (report_path, report),
         (legacy_report_path, legacy_report),
-        (decision_path, decision),
+        *decisions,
         *ideas,
         *outcome_reviews,
+        *historian_lessons,
     ]:
         walk_timestamps(value, str(path), errors)
 
@@ -2202,10 +3057,25 @@ def validate_examples(parsed: dict[Path, object], errors: list[str]) -> None:
         )
     if isinstance(decision, dict) and decision.get("schema_version") != "1.0.0":
         errors.append(f"{decision_path}: synthetic decision must use schema version 1.0.0")
+    if (
+        not isinstance(historian_decision, dict)
+        or historian_decision.get("schema_version") != "1.1.0"
+    ):
+        errors.append(
+            f"{historian_decision_path}: historian decision must use schema "
+            "version 1.1.0"
+        )
 
     for path, review in outcome_reviews:
         validate_outcome_review(review, path, errors)
     validate_outcome_review_fixture_coverage(outcome_reviews, errors)
+    for path, lesson in historian_lessons:
+        validate_historian_lesson(lesson, path, errors)
+    validate_historian_lesson_chain(historian_lessons, errors)
+    for path, candidate_decision in decisions:
+        validate_decision_historian_lesson_refs(
+            candidate_decision, historian_lessons, path, errors
+        )
 
     source_statuses: dict[str, str] = {}
     if isinstance(report, dict):
@@ -2449,6 +3319,45 @@ def validate_examples(parsed: dict[Path, object], errors: list[str]) -> None:
                     Path(f"{compatibility_path}::outcome-review[{index}]"),
                     errors,
                 )
+        historian_contract = (
+            contracts.get("historian-lesson") if isinstance(contracts, dict) else None
+        )
+        historian_fixtures = (
+            historian_contract.get("fixtures")
+            if isinstance(historian_contract, dict)
+            else None
+        )
+        compatibility_lessons: list[tuple[Path, object]] = []
+        if isinstance(historian_fixtures, list):
+            for index, fixture in enumerate(historian_fixtures):
+                if not isinstance(fixture, dict):
+                    continue
+                fixture_path = Path(
+                    f"{compatibility_path}::historian-lesson[{index}]"
+                )
+                instance = fixture.get("instance")
+                compatibility_lessons.append((fixture_path, instance))
+                validate_historian_lesson(instance, fixture_path, errors)
+            validate_historian_lesson_chain(compatibility_lessons, errors)
+        decision_contract = (
+            contracts.get("decision-record") if isinstance(contracts, dict) else None
+        )
+        decision_fixtures = (
+            decision_contract.get("fixtures")
+            if isinstance(decision_contract, dict)
+            else None
+        )
+        if isinstance(decision_fixtures, list):
+            for index, fixture in enumerate(decision_fixtures):
+                if not isinstance(fixture, dict):
+                    continue
+                validate_decision_historian_lesson_refs(
+                    fixture.get("instance"),
+                    compatibility_lessons,
+                    Path(f"{compatibility_path}::decision-record[{index}]"),
+                    errors,
+                )
+    validate_learning_metric_cases(parsed, source_statuses, errors)
     validate_report_acceptance_cases(acceptance, errors)
     validate_universe_completion_cases(completion, errors)
 

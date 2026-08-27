@@ -38,6 +38,9 @@ another axis or used as evidence that another gate passed.
 | Invalidation trigger | `outcome-review.invalidation_trigger.state` | Whether the original invalidation condition was observed |
 | Invalidation response | `outcome-review.invalidation_response.state` | Qualitative handling of the trigger state |
 | Decision attribution | `outcome-review.attribution` | Evidence-linked qualitative associations without causal or numeric contribution claims |
+| Lesson lifecycle | `historian-lesson.state` | Whether one immutable lesson revision is active or retires its series |
+| Lesson approval | `historian-lesson.approval.status` | Human authorization of one exact immutable lesson-control revision, including retirement |
+| Lesson ingestion | `historian-lesson.ingestion.status` | Acknowledgement that the approved version entered Chief Historian review, not execution authority |
 
 `complete`, `ready`, `advance`, and `high` never mean recommended, suitable for
 a client, or authorized for deployment. Research disposition and deployment
@@ -82,6 +85,10 @@ All contract timestamps are RFC 3339 date-times in UTC and end in `Z`.
 | `clocks.reviewed_at` | Finalization time of the append-only outcome review |
 | `invalidation_trigger.triggered_at` | Observed time of a triggered invalidation condition |
 | `invalidation_response.responded_at` | Observed response time for a followed or delayed invalidation response |
+| `historian-lesson.clocks.data_as_of` | Evidence cutoff represented by one lesson control revision |
+| `historian-lesson.clocks.approved_at` | Time an authorized human approved the exact lesson revision |
+| `historian-lesson.clocks.ingested_at` | Time Chief Historian ingestion acknowledged that exact revision |
+| `historian-lesson.clocks.generated_at` | Time the finalized append-only lesson control was assembled |
 
 Generation, evidence, retrieval, persistence, universe-membership, and cycle
 completion are different clocks. A future contract field for one of these
@@ -219,6 +226,7 @@ report view over deployment decisions, not an investment-idea `board` value.
 | `invalidation_conditions` | Conditions requiring reassessment or exit from the research case |
 | `review_by` | Next required review deadline |
 | `evidence_ids` | Evidence records supporting the decision |
+| `historian_lesson_version_refs` | Decision-record 1.1 exact lesson versions materially used in Chief Historian review; an empty array means none applied |
 
 ## Outcome-review field dictionary
 
@@ -250,6 +258,44 @@ does not derive decision, process, or timing quality. Attribution is not causal
 proof, investment-performance attribution, or a numeric contribution model.
 See the [outcome-review contract](outcome-review-contract.md) for the full state
 and lifecycle rules.
+
+## Learning-loop measurement vocabulary
+
+| Term | Meaning |
+| --- | --- |
+| Frozen idea cohort | At most one metric-eligible `investment-idea 1.1.0` record per stable idea ID at the private cutoff |
+| Frozen decision cohort | Distinct target decision references selected before review-chain resolution |
+| Metric eligible | A contract-valid input whose retained history supports the named measurement; ineligible inputs remain counted as exclusions |
+| Terminal review | The only review in one valid identity-consistent append-only chain that has no successor at the cutoff |
+| Missing history | No retained review exists for the target decision |
+| Invalid history | A retained target review fails the adopted outcome-review contract |
+| Unresolved history | A chain is dangling, cyclic, branched, cross-identity, duplicated, or has no unique terminal |
+| `not_available` | A rate or aggregate whose denominator is zero; it is never silently serialized as measured zero |
+
+Every private rate retains its exact raw numerator and denominator. Repeat
+quality is a profile of disclosed counts and rates, never a weighted score.
+Research outcome, timing discipline, invalidation trigger, and invalidation
+response remain independent measurement axes.
+
+## Chief Historian lesson field dictionary
+
+| Field | Meaning |
+| --- | --- |
+| `schema_version` | Version of the metadata-only lesson control contract |
+| `lesson_series_id` | Opaque stable identity for one append-only lesson series |
+| `lesson_version_ref` | Opaque exact reference for one immutable series revision |
+| `revision` | Consecutive revision number; gaps and branches are invalid |
+| `prior_version_ref` | Exact immediately prior revision in the same series; omitted only for revision 1 |
+| `state` | `active` for advisory eligibility or `retired` for an append-only terminal tombstone |
+| `source_reviews` | Opaque finalized review references and copied finalization clocks used for private reconciliation |
+| `content_ref` | Opaque reference to immutable private lesson content; required only for an active revision |
+| `approval` | Human-approval status, authority class, and opaque receipt for this exact revision |
+| `ingestion` | Successful advisory-only Chief Historian ingestion acknowledgement, mode, and opaque receipt |
+| `clocks` | Ordered evidence, approval, ingestion, and artifact-generation times for this revision |
+
+The lesson body, approval identity, receipt mappings, and catalog remain
+private. Approval and ingestion do not execute the lesson, prove that it is
+correct, or authorize a research disposition or deployment action.
 
 ## Private conformance review
 
