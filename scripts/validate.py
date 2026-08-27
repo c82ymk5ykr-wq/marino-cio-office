@@ -11,6 +11,7 @@ import subprocess
 import sys
 from collections.abc import Mapping
 from datetime import datetime
+from fractions import Fraction
 from pathlib import Path
 from statistics import median
 from urllib.parse import unquote
@@ -1118,6 +1119,30 @@ def timestamp_value(value: object) -> datetime | None:
     if parsed.utcoffset() is None or parsed.utcoffset().total_seconds() != 0:
         return None
     return parsed
+
+
+def exact_timestamp_value(value: object) -> Fraction | None:
+    """Return an exact UTC instant without truncating fractional seconds."""
+    if not isinstance(value, str):
+        return None
+    match = re.fullmatch(
+        r"(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})(?:\.(\d+))?Z",
+        value,
+    )
+    if match is None:
+        return None
+    year, month, day, hour, minute, second = map(int, match.groups()[:6])
+    fraction_digits = match.group(7) or ""
+    try:
+        whole = datetime(year, month, day, hour, minute, second)
+    except ValueError:
+        return None
+    epoch = datetime(1970, 1, 1)
+    delta = whole - epoch
+    whole_seconds = delta.days * 86_400 + delta.seconds
+    scale = 10 ** len(fraction_digits)
+    fractional = int(fraction_digits) if fraction_digits else 0
+    return Fraction(whole_seconds * scale + fractional, scale)
 
 
 def percent_or_none(numerator: int, denominator: int) -> float | None:
@@ -2293,7 +2318,7 @@ def validate_historian_lesson(
             review_ref = review.get("review_ref")
             if isinstance(review_ref, str):
                 review_refs.append(review_ref)
-            finalized_at = timestamp_value(review.get("finalized_at"))
+            finalized_at = exact_timestamp_value(review.get("finalized_at"))
             if finalized_at is None:
                 errors.append(
                     f"{location}.source_reviews[{index}].finalized_at: "
@@ -2306,10 +2331,10 @@ def validate_historian_lesson(
 
     clocks = lesson.get("clocks")
     clock_names = ("data_as_of", "approved_at", "ingested_at", "generated_at")
-    parsed_clocks: dict[str, datetime] = {}
+    parsed_clocks: dict[str, Fraction] = {}
     if isinstance(clocks, dict):
         for name in clock_names:
-            parsed = timestamp_value(clocks.get(name))
+            parsed = exact_timestamp_value(clocks.get(name))
             if parsed is None:
                 errors.append(f"{location}.clocks.{name}: invalid UTC timestamp")
             else:
@@ -2473,8 +2498,10 @@ def validate_historian_lesson_chain(
         predecessor_clocks = predecessor_lesson.get("clocks")
         current_clocks = lesson.get("clocks")
         if isinstance(predecessor_clocks, dict) and isinstance(current_clocks, dict):
-            predecessor_ingested = timestamp_value(predecessor_clocks.get("ingested_at"))
-            current_ingested = timestamp_value(current_clocks.get("ingested_at"))
+            predecessor_ingested = exact_timestamp_value(
+                predecessor_clocks.get("ingested_at")
+            )
+            current_ingested = exact_timestamp_value(current_clocks.get("ingested_at"))
             if (
                 predecessor_ingested is not None
                 and current_ingested is not None
@@ -2581,8 +2608,8 @@ def validate_decision_historian_lesson_refs(
         errors.append(
             f"{location}.historian_lesson_version_refs: duplicate exact version reference"
         )
-    decision_time = timestamp_value(decision.get("recorded_at"))
-    review_time = timestamp_value(decision.get("review_by"))
+    decision_time = exact_timestamp_value(decision.get("recorded_at"))
+    review_time = exact_timestamp_value(decision.get("review_by"))
     if decision_time is None:
         errors.append(f"{location}.recorded_at: invalid UTC timestamp")
     if review_time is None:
@@ -2615,7 +2642,7 @@ def validate_decision_historian_lesson_refs(
 
         selected_clocks = selected.get("clocks")
         selected_ingested = (
-            timestamp_value(selected_clocks.get("ingested_at"))
+            exact_timestamp_value(selected_clocks.get("ingested_at"))
             if isinstance(selected_clocks, dict)
             else None
         )
@@ -2633,7 +2660,7 @@ def validate_decision_historian_lesson_refs(
                 continue
             clocks = lesson.get("clocks")
             ingested_at = (
-                timestamp_value(clocks.get("ingested_at"))
+                exact_timestamp_value(clocks.get("ingested_at"))
                 if isinstance(clocks, dict)
                 else None
             )

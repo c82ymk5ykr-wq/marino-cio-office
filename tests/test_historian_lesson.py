@@ -371,6 +371,34 @@ class HistorianLessonTests(unittest.TestCase):
             self.selection_errors(retired, self.initial, self.revised, self.retired)
         )
 
+    def test_arbitrary_fractional_seconds_are_compared_exactly(self) -> None:
+        inverted = copy.deepcopy(self.initial)
+        inverted["clocks"]["ingested_at"] = "2099-01-01T12:00:00.0000002Z"
+        inverted["clocks"]["generated_at"] = "2099-01-01T12:00:00.0000001Z"
+        self.assertTrue(self.lesson_errors(inverted))
+
+        predecessor = copy.deepcopy(self.initial)
+        predecessor["clocks"]["ingested_at"] = "2099-02-01T12:00:00.0000002Z"
+        predecessor["clocks"]["generated_at"] = "2099-02-01T13:00:00Z"
+        successor = copy.deepcopy(self.revised)
+        successor["clocks"]["ingested_at"] = "2099-02-01T12:00:00.0000001Z"
+        self.assertTrue(self.chain_errors(predecessor, successor))
+
+        not_yet_available = copy.deepcopy(self.decision)
+        not_yet_available["recorded_at"] = "2099-01-01T12:00:00.0000001Z"
+        not_yet_available["historian_lesson_version_refs"] = [
+            self.initial["lesson_version_ref"]
+        ]
+        available_later = copy.deepcopy(self.initial)
+        available_later["clocks"]["ingested_at"] = (
+            "2099-01-01T12:00:00.0000002Z"
+        )
+        self.assertTrue(self.selection_errors(not_yet_available, available_later))
+
+        impossible = copy.deepcopy(self.initial)
+        impossible["clocks"]["approved_at"] = "2099-02-30T11:00:00Z"
+        self.assertTrue(self.lesson_errors(impossible))
+
     def test_later_retirement_does_not_rewrite_an_earlier_decision(self) -> None:
         earlier_decision = copy.deepcopy(self.decision)
         preserved = copy.deepcopy(earlier_decision)
